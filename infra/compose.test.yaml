@@ -1,0 +1,40 @@
+# Test overlay. Use it together with the main file:
+#
+#   docker compose -f compose.yaml -f infra/compose.test.yaml up -d --build
+#
+# It replaces the two real time APIs with a stub the tests control, so tests can set the clock
+# (DST days), slow it down or take it offline. Nothing else about the stack changes: the same
+# images, the same two replicas, the same gateway.
+
+x-test-env: &test-env
+  TimeApi__PrimaryUrl: http://time-stub:8090/primary
+  TimeApi__SecondaryUrl: http://time-stub:8090/secondary
+  # Always ask the stub, so a test that moves the clock is seen at once.
+  TimeApi__DisplayMaxAgeSeconds: "0"
+  # Recover quickly after a test that takes the stub offline.
+  TimeApi__CircuitBreakSeconds: "1"
+  # All tests come from one address; the sign-in limit would otherwise stop the suite.
+  RateLimit__SignInPerMinute: ${TEST_SIGN_IN_PER_MINUTE:-100000}
+  AutoClose__IntervalSeconds: "3"
+
+services:
+  time-stub:
+    build:
+      context: ./tests/time-stub
+    image: trackops-time-stub:1.0.0
+    ports:
+      - "127.0.0.1:8090:8090"
+
+  backend-1:
+    depends_on:
+      time-stub:
+        condition: service_started
+    environment:
+      <<: *test-env
+
+  backend-2:
+    depends_on:
+      time-stub:
+        condition: service_started
+    environment:
+      <<: *test-env
