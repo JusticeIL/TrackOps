@@ -16,9 +16,15 @@ API cannot be reached, nothing is recorded and the request fails with `503`.
 | Gateway | nginx in front of two backend replicas |
 | Tests | pytest, black-box against the running stack |
 
-The backend runs on .NET 10, the current LTS release. Filtered searches use the HTTP `QUERY`
-method (RFC 10008), as the team lead requested. On .NET 10 `QUERY` is mapped as a custom verb with
-`[AcceptVerbs("QUERY")]`; first-class support for it starts in .NET 11.
+The backend runs on .NET 10, the current LTS release.
+
+**Searches use the HTTP `QUERY` method** (RFC 10008, published June 2026). This was a deliberate
+choice. A search is a read, so it should be safe and repeatable like `GET`; but its filter
+(employee names, dates, free text) should not sit in the URL, where it ends up in browser
+history, proxy logs and server access logs. `QUERY` gives both: the filter travels in the request
+body, and the method is defined as safe and idempotent, which `POST` is not. On .NET 10 it is
+mapped as a custom verb with `[AcceptVerbs("QUERY")]`; first-class support starts in .NET 11.
+The trade-off and the missing fallback are in [DECISIONS.md](DECISIONS.md#5-api).
 
 Why things are built the way they are: [DECISIONS.md](DECISIONS.md).
 Security work, found / fixed / tested: [docs/SECURITY-REPORT.md](docs/SECURITY-REPORT.md).

@@ -104,11 +104,23 @@ limits, and time-of-day premiums.
 
 - REST over resources; errors as RFC 9457 `problem+json` with a stable `code`.
 - Sign-in is modelled as a session resource: `POST`, `GET`, `DELETE /auth/session`.
-- **`QUERY` for filtered lists, with no POST fallback.** `QUERY` (RFC 10008) is safe and
-  idempotent and carries the filter in the body. A POST fallback was planned and then removed by
-  decision: one way to search, fewer routes. **Known limit:** a client or proxy that rejects
-  `QUERY` cannot search. It was verified through nginx and Kestrel; browsers send it through
-  `fetch`.
+- **`QUERY` for filtered lists, with no POST fallback.** The three searches (my history,
+  employee autocomplete, all employees' shifts) use the HTTP `QUERY` method, RFC 10008, published
+  in June 2026. The options were:
+
+  | Option | Problem |
+  |---|---|
+  | `GET` with query-string filters | Names, dates and search text land in the URL, and so in browser history, proxy logs and access logs. URL length also limits the filter |
+  | `POST /search` | Keeps the filter out of the URL, but `POST` means "this may change something": it is not safe, not idempotent, must not be retried automatically, and needs a CSRF token for what is only a read |
+  | `QUERY` (chosen) | The filter is in the body, and the method is defined as safe and idempotent, so a lost request can simply be sent again and no CSRF token is needed |
+
+  What `QUERY` does **not** do: it does not encrypt or hide the filter from anyone who can read
+  the request itself. It keeps it out of URLs and logs; confidentiality on the wire is TLS's job.
+
+  A POST fallback was planned and then removed by decision: one way to search, fewer routes.
+  **Known limit:** a client or proxy that rejects `QUERY` cannot search. It was verified through
+  nginx and Kestrel on both replicas, and browsers send it through `fetch`. ASP.NET Core on
+  .NET 10 maps it as a custom verb; .NET 11 adds first-class support.
 - `PUT` is not used; no endpoint was invented to use it.
 - Another user's shift returns `404`, not `403`, so ids cannot be probed.
 
