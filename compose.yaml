@@ -1,0 +1,104 @@
+# TrackOps: SQL Server, Redis, a one-shot migrator, two API replicas, the frontend and an nginx gateway.
+# Only the gateway publishes a port. Every secret comes from .env (see .env.example).
+name: trackops
+
+x-backend: &backend
+  build:
+    context: ./backend
+    target: api
+  image: trackops-backend:1.0.0
+  restart: unless-stopped
+  depends_on:
+    migrator:
+      condition: service_completed_successfully
+    redis:
+      condition: service_healthy
+
+x-backend-env: &backend-env
+  ConnectionStrings__Database: "Server=sqlserver,1433;Database=TrackOps;User Id=${APP_DB_LOGIN:?set APP_DB_LOGIN in .env};Password=${APP_DB_PASSWORD:?set APP_DB_PASSWORD in .env};Encrypt=True;TrustServerCertificate=True;Max Pool Size=50"
+  ConnectionStrings__Redis: "redis:6379,password=${REDIS_PASSWORD:?set REDIS_PASSWORD in .env},abortConnect=false"
+  Jwt__Key: ${JWT_KEY:?set JWT_KEY in .env}
+  Security__CsrfKey: ${CSRF_KEY:?set CSRF_KEY in .env}
+  Security__RequireHttps: ${REQUIRE_HTTPS:-true}
+  Security__AllowedOrigin: ${PUBLIC_ORIGIN:-http://localhost:8080}
+  WorkRules__DailyTargetMinutes: ${DAILY_TARGET_MINUTES:-480}
+  WorkRules__MaxShiftHours: ${MAX_SHIFT_HOURS:-16}
+
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-CU28-ubuntu-22.04
+    restart: unless-stopped
+    environment:
+      ACCEPT_EULA: ${ACCEPT_EULA:?set ACCEPT_EULA=Y in .env to accept the SQL Server licence}
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:?set MSSQL_SA_PASSWORD in .env}
+      MSSQL_PID: Developer
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -Q \"SELECT 1\" -b -o /dev/null"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+
+  redis:
+    image: redis:8.10.3-alpine
+    restart: unless-stopped
+    # Sessions, counters and cache only: nothing here needs to survive a restart.
+    command: ["sh", "-c", "exec redis-server --save \"\" --appendonly no --requirepass \"$$REDIS_PASSWORD\""]
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?set REDIS_PASSWORD in .env}
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" --no-auth-warning ping | grep -q PONG"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  migrator:
+    build:
+      context: ./backend
+      target: migrator
+    image: trackops-migrator:1.0.0
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    environment:
+      ConnectionStrings__Admin: "Server=sqlserver,1433;Database=TrackOps;User Id=sa;Password=${MSSQL_SA_PASSWORD};Encrypt=True;TrustServerCertificate=True"
+      Database__AppLogin: ${APP_DB_LOGIN}
+      Database__AppPassword: ${APP_DB_PASSWORD}
+
+  backend-1:
+    <<: *backend
+    environment:
+      <<: *backend-env
+      Security__ReplicaName: "1"
+
+  backend-2:
+    <<: *backend
+    environment:
+      <<: *backend-env
+      Security__ReplicaName: "2"
+
+  frontend:
+    build:
+      context: ./frontend
+    image: trackops-frontend:1.0.0
+    restart: unless-stopped
+
+  gateway:
+    image: nginx:1.31.8-alpine
+    restart: unless-stopped
+    depends_on:
+      - backend-1
+      - backend-2
+      - frontend
+    environment:
+      HSTS_HEADER_VALUE: ${HSTS_HEADER_VALUE:-}
+    volumes:
+      - ./infra/nginx/gateway.conf.template:/etc/nginx/templates/default.conf.template:ro
+      - ./infra/nginx/security-headers.conf:/etc/nginx/snippets/security-headers.conf:ro
+    ports:
+      - "${PUBLIC_PORT:-8080}:8080"
+
+volumes:
+  sqlserver-data:

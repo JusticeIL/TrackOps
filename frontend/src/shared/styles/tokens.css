@@ -1,0 +1,45 @@
+/*
+ * Design tokens. Three colours carry the whole UI: near-black, near-white and one teal accent.
+ *
+ * Contrast (WCAG 2.2 AA needs 4.5:1 for text, 3:1 for large text and UI parts), computed:
+ *   --ink        #0A0A0A on --paper #FAFAFA   18.9 : 1   body text
+ *   --ink        #0A0A0A on --accent #5AC2C5   9.5 : 1   text on teal fills (primary button)
+ *   --accent     #5AC2C5 on --ink   #0A0A0A    9.5 : 1   teal on the black sidebar
+ *   --accent     #5AC2C5 on white              2.1 : 1   FAILS, so teal is never text on light surfaces
+ *   --accent-ink #1F6F72 on white              5.9 : 1   the teal used for text and links on light
+ *   --muted      #5A5A5A on white              6.9 : 1   secondary text
+ *   --danger     #B3261E on white              6.5 : 1   errors
+ *   --success    #1B6E36 on white              6.3 : 1   positive status
+ *   --line-strong #8A8A8A on white             3.5 : 1   input borders and other UI parts
+ */
+:root {
+  --ink: #0a0a0a;
+  --paper: #fafafa;
+  --surface: #ffffff;
+  --accent: #5ac2c5;
+  --accent-ink: #1f6f72;
+  --accent-tint: #e6f5f5;
+  --muted: #5a5a5a;
+  --line: #e2e2e2;
+  --line-strong: #8a8a8a;
+  --danger: #b3261e;
+  --danger-tint: #fdecec;
+  --success: #1b6e36;
+  --success-tint: #e7f6ec;
+  --warning-ink: #7a4b00;
+  --warning-tint: #fff4dc;
+
+  --font: 'Heebo', system-ui, 'Segoe UI', Arial, sans-serif;
+  --radius: 12px;
+  --radius-small: 8px;
+  --shadow: 0 1px 2px rgb(10 10 10 / 6%), 0 4px 16px rgb(10 10 10 / 5%);
+  --focus-ring: 0 0 0 3px var(--surface), 0 0 0 6px var(--ink);
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --sidebar-width: 248px;
+}
