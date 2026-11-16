@@ -265,6 +265,9 @@ uses a professionally issued certificate.
   (custom verb mapping); first-class QUERY support (`HttpMethods.Query`, OpenAPI 3.2) only
   arrives in .NET 11. The docs will not claim that .NET 10 has built-in QUERY support.
   What exactly the team lead asked for is the owner's to confirm before the docs are written.
+  **Resolved after the build (2026-11-16):** QUERY was the owner's own choice, not a request
+  from the team lead. README and DECISIONS.md present it as a deliberate decision with its
+  reasons and its limit, and attribute nothing to the team lead.
 
 ### Tiering
 
