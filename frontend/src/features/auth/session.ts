@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import type { QueryClient } from '@tanstack/react-query'
 import { api, ApiError, forgetCsrfToken } from '../../shared/api/client'
 import type { User } from '../../shared/api/types'
 
@@ -22,15 +23,24 @@ export function useSession() {
   })
 }
 
+/**
+ * Switches the app to another user (or to nobody).
+ * The session entry is updated in place, so every component watching it re-renders, and the
+ * route guard redirects. Everything else in the cache belonged to the previous user and is dropped.
+ * (Clearing the whole cache instead would detach the guard from the session and leave the old
+ * user's screen visible.)
+ */
+function switchUser(queryClient: QueryClient, user: User | null): void {
+  forgetCsrfToken()
+  queryClient.setQueryData(SESSION_KEY, user)
+  queryClient.removeQueries({ predicate: (query) => query.queryKey[0] !== SESSION_KEY[0] })
+}
+
 export function useSignIn() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (credentials: { username: string; password: string }) => api<User>('POST', '/auth/session', { body: credentials }),
-    onSuccess: (user) => {
-      forgetCsrfToken()
-      queryClient.clear()
-      queryClient.setQueryData(SESSION_KEY, user)
-    },
+    onSuccess: (user) => switchUser(queryClient, user),
   })
 }
 
@@ -38,10 +48,7 @@ export function useSignOut() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: () => api<void>('DELETE', '/auth/session'),
-    onSettled: () => {
-      forgetCsrfToken()
-      queryClient.clear()
-      queryClient.setQueryData(SESSION_KEY, null)
-    },
+    // Even if the request failed, show the sign-in screen; the next request will tell the truth.
+    onSettled: () => switchUser(queryClient, null),
   })
 }
