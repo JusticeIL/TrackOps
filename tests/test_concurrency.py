@@ -2,6 +2,8 @@
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 
+import pytest
+
 PARALLEL = 20
 
 
@@ -36,6 +38,35 @@ def test_concurrent_retries_with_one_key_all_get_the_same_shift(user, stub):
 	assert all(response.status_code == 201 for response in responses), [response.status_code for response in responses]
 	assert len({response.json()["id"] for response in responses}) == 1
 	assert user.query("/shifts").json()["totalItems"] == 1
+
+
+def test_concurrent_clock_out_retries_with_one_key_all_get_the_same_answer(user, stub):
+	stub.set("2026-11-17T07:00:00Z")
+	user.clock_in()
+	stub.set("2026-11-17T15:00:00Z")
+	key = str(uuid.uuid4())
+	clients = [user.clone() for _ in range(10)]
+
+	responses = fire(clients, lambda client: client.clock_out(key))
+
+	# Every retry gets the stored 200, never "no open shift" because another retry got there first.
+	assert all(response.status_code == 200 for response in responses), [response.status_code for response in responses]
+	assert len({response.json()["clockOutUtc"] for response in responses}) == 1
+	assert user.get("/shifts/current").status_code == 204
+
+
+@pytest.mark.parametrize("attempt", range(5))
+def test_same_key_race_is_stable_over_repeated_runs(stub, attempt):
+	from conftest import Client
+	user = Client()
+	stub.set("2026-11-17T07:00:00Z")
+	key = str(uuid.uuid4())
+	clients = [user.clone() for _ in range(12)]
+
+	responses = fire(clients, lambda client: client.clock_in(key))
+
+	assert [response.status_code for response in responses] == [201] * 12
+	assert len({response.json()["id"] for response in responses}) == 1
 
 
 def test_concurrent_break_starts_open_exactly_one_break(user, stub):

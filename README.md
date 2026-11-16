@@ -134,7 +134,7 @@ tests/.venv/Scripts/python -m pip install -r tests/requirements.txt   # Linux/ma
 tests/.venv/Scripts/python -m pytest
 ```
 
-About 125 tests, roughly three minutes. They cover clock in/out through the stub; fail-closed
+About 150 tests, roughly four minutes. They cover clock in/out through the stub; fail-closed
 behaviour when the time source is down, slow or wrong; DST days (23 h and 25 h) and overtime;
 20 concurrent clock-ins across both replicas; idempotent retries; `QUERY` search and pagination;
 401/403 on manager routes; CSRF; rate limiting; security headers; CORS; XSS and SQL injection

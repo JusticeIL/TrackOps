@@ -25,6 +25,7 @@ public class ShiftRecordingService
 	private const string k_BreakEnd = "break-end";
 	private const int k_Created = 201;
 	private const int k_Ok = 200;
+	private const int k_Conflict = 409;
 	private readonly IAppDbContext r_Db;
 	private readonly ITimeProvider r_TimeProvider;
 	private readonly ICalendarCache r_CalendarCache;
@@ -169,12 +170,12 @@ public class ShiftRecordingService
 
 		if (result == null)
 		{
-			await i_Precheck();
-
-			TimeReading reading = await r_TimeProvider.GetUtcNowAsync(i_CancellationToken);
-
 			try
 			{
+				await i_Precheck();
+
+				TimeReading reading = await r_TimeProvider.GetUtcNowAsync(i_CancellationToken);
+
 				await using IDbContextTransaction transaction = await r_Db.Database.BeginTransactionAsync(i_CancellationToken);
 				Shift shift = await i_Write(reading);
 
@@ -207,6 +208,17 @@ public class ShiftRecordingService
 					throw r_Db.IsUniqueViolation(exception, DbNames.k_OneOpenBreakIndex)
 						? Problems.BreakAlreadyOpen()
 						: Problems.ShiftAlreadyOpen();
+				}
+			}
+			catch (AppException conflict) when (conflict.StatusCode == k_Conflict)
+			{
+				// "Already open" or "nothing open" may be the trace of this very request: a retry with
+				// the same key that finished while this one was running. If so, replay its response.
+				r_Db.ClearTracking();
+				result = await findStoredAsync(i_User.Id, i_IdempotencyKey, i_Endpoint, i_CancellationToken);
+				if (result == null)
+				{
+					throw;
 				}
 			}
 

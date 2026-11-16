@@ -54,7 +54,7 @@ API_TREE = folder(
 			endpoint("POST", "/clock-out", "Clock out · closes open break ★", "Employee", "200 · 409 · 503"),
 			folder(
 				"/breaks", "one open break at a time",
-				endpoint("POST", "/", "Start break ★", "Employee", "201 · 409 · 503"),
+				endpoint("POST", "/current/start", "Start break ★", "Employee", "201 · 409 · 503"),
 				endpoint("POST", "/current/end", "End break ★", "Employee", "200 · 409 · 503"),
 			),
 		),
@@ -103,7 +103,7 @@ TREE_LINE = "#9A9A9A"
 
 def method_style(method):
 	if method == "QUERY":
-		return f"rounded=1;arcSize=50;html=1;fontSize=11;fontStyle=1;strokeColor={INK};fontColor={INK};fillColor={TEAL};"
+		return f"rounded=1;arcSize=50;html=1;fontSize=11;fontStyle=1;strokeColor=none;fontColor={INK};fillColor={TEAL};"
 	return f"rounded=1;arcSize=50;html=1;fontSize=11;fontStyle=1;strokeColor=none;fontColor={WHITE};fillColor={METHOD_FILL[method]};"
 
 
