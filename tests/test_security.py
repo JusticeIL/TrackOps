@@ -226,10 +226,16 @@ def test_sql_in_search_is_treated_as_text(user, stub, payload):
 @pytest.mark.parametrize("payload", SQL_PAYLOADS)
 def test_sql_in_manager_search_is_treated_as_text(manager, payload):
 	employees = manager.query("/employees", {"search": payload})
-	shifts = manager.query("/employees/shifts", {"search": payload})
+	shifts = manager.query("/employees/shifts", {"search": payload, "pageSize": 100})
+	everything = manager.query("/employees/shifts", {"pageSize": 1})
 
 	assert employees.status_code == 200 and employees.json()["items"] == []
-	assert shifts.status_code == 200 and shifts.json()["totalItems"] == 0
+	assert shifts.status_code == 200
+	# The manager sees every user's notes, and another test stores a note with this exact text.
+	# So the search may find rows, but only rows that contain the payload literally, and never all rows.
+	for item in shifts.json()["items"]:
+		assert payload.lower() in (item["note"] or "").lower()
+	assert shifts.json()["totalItems"] < everything.json()["totalItems"]
 
 
 def test_like_wildcards_in_search_match_literally(user, stub):
