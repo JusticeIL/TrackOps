@@ -45,7 +45,7 @@ public class AppDbContext : DbContext, IAppDbContext
 	public Task<Shift?> LockOpenShiftAsync(int i_UserId, CancellationToken i_CancellationToken)
 	{
 		return Shifts
-			.FromSqlInterpolated($"SELECT * FROM Shifts WITH (UPDLOCK, ROWLOCK) WHERE UserId = {i_UserId} AND ClockOutUtc IS NULL")
+			.FromSql($"SELECT * FROM Shifts WITH (UPDLOCK, ROWLOCK) WHERE UserId = {i_UserId} AND ClockOutUtc IS NULL")
 			.Include(shift => shift.Breaks)
 			.FirstOrDefaultAsync(i_CancellationToken);
 	}
@@ -53,7 +53,7 @@ public class AppDbContext : DbContext, IAppDbContext
 	public Task<Shift?> LockShiftAsync(long i_ShiftId, int i_UserId, CancellationToken i_CancellationToken)
 	{
 		return Shifts
-			.FromSqlInterpolated($"SELECT * FROM Shifts WITH (UPDLOCK, ROWLOCK) WHERE Id = {i_ShiftId} AND UserId = {i_UserId}")
+			.FromSql($"SELECT * FROM Shifts WITH (UPDLOCK, ROWLOCK) WHERE Id = {i_ShiftId} AND UserId = {i_UserId}")
 			.Include(shift => shift.Breaks)
 			.FirstOrDefaultAsync(i_CancellationToken);
 	}
