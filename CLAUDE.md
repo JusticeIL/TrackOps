@@ -26,7 +26,7 @@ Compose. Two API replicas behind nginx. UI in Hebrew (RTL); code, commits and do
    `docs/api/API.md`, `docs/SECURITY-REPORT.md`, and files under `.claude/`. Do not create other
    `.md` files.
 7. **The API contract has three copies that change together:** `docs/api/API.md`, the endpoint
-   table in `tools/build_api_diagram.py` (then regenerate the `.drawio` and PNGs), and the
+   tree in `tools/build_api_diagram.py` (then regenerate the `.drawio` and PNGs), and the
    controllers.
 
 ## Commands

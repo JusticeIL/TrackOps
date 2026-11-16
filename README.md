@@ -191,8 +191,9 @@ docs/                   API contract and diagram, security report
 
 ### API diagram
 
-The diagram is generated from the endpoint table in `tools/build_api_diagram.py`. When the API
-changes, edit that table and `docs/api/API.md` together, then:
+The API map is drawn as a folder tree: each folder is a path segment and each endpoint is a leaf.
+It is generated from the endpoint tree in `tools/build_api_diagram.py`. When the API changes, edit
+that tree and `docs/api/API.md` together, then:
 
 ```bash
 python tools/build_api_diagram.py
