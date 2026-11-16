@@ -35,3 +35,7 @@ Thumbs.db
 graphify-out/
 .graphifyignore
 .claude/rules/graphify.md
+# Files graphify's own Claude Code installer generates (skill, registration, hooks)
+.claude/skills/graphify/
+.claude/CLAUDE.md
+.claude/settings.json
