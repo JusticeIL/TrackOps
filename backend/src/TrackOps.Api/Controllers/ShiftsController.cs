@@ -54,7 +54,7 @@ public class ShiftsController : ControllerBase
 		return recorded(result);
 	}
 
-	[HttpPost("current/breaks")]
+	[HttpPost("current/breaks/current/start")]
 	[RateLimit(eRateLimitBucket.Recording)]
 	public async Task<IActionResult> StartBreak([FromHeader(Name = k_IdempotencyHeader)] string? i_IdempotencyKey, CancellationToken i_CancellationToken)
 	{

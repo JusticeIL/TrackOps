@@ -71,7 +71,7 @@ class Client:
 		return self.record("/shifts/current/clock-out", key, json={"note": note} if note is not None else None)
 
 	def break_start(self, key=None):
-		return self.record("/shifts/current/breaks", key)
+		return self.record("/shifts/current/breaks/current/start", key)
 
 	def break_end(self, key=None):
 		return self.record("/shifts/current/breaks/current/end", key)

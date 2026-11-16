@@ -151,9 +151,12 @@ No password is stored or compared.
 
 ### Breaks
 
+Both actions read as a pair: `…/breaks/current/start` and `…/breaks/current/end`. Neither takes a body;
+the time of each is the external reading taken when the request arrives.
+
 | Method | Path | Role | Success | Notes |
 |---|---|---|---|---|
-| POST | `/shifts/current/breaks` ★ | Employee | 201 Shift | 409 `no_open_shift` or `break_already_open`. 503. |
+| POST | `/shifts/current/breaks/current/start` ★ | Employee | 201 Shift | 409 `no_open_shift` or `break_already_open`. 503. |
 | POST | `/shifts/current/breaks/current/end` ★ | Employee | 200 Shift | 409 `no_open_shift` or `no_open_break`. 503. |
 
 ### Calendar

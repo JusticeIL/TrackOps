@@ -15,7 +15,7 @@ export type ShiftAction = 'clockIn' | 'clockOut' | 'breakStart' | 'breakEnd'
 const PATHS: Record<ShiftAction, string> = {
   clockIn: '/shifts',
   clockOut: '/shifts/current/clock-out',
-  breakStart: '/shifts/current/breaks',
+  breakStart: '/shifts/current/breaks/current/start',
   breakEnd: '/shifts/current/breaks/current/end',
 }
 
