@@ -20,12 +20,24 @@ clock, no server clock.
 | A reading that is not later than what the shift already holds is treated as a provider fault (`503`) | A clock that goes backwards is wrong; recording it would corrupt durations |
 | Stored as UTC instants (`datetime2(3)`); Zurich local time is computed when needed | Instants are unambiguous; local days are a presentation and calculation concern |
 | A static test fails if the system clock is read outside two modules | The rule is enforced by a check, not by memory |
+| No request can carry a recording time | The four recording endpoints take no time in the body or headers; whatever a client sends is ignored. Tested |
 
 **Display clock is not recording.** The dashboard clock is seeded from `GET /time` (the server's
 latest external reading plus monotonic elapsed time) and then ticks in the browser with
 `performance.now()`, re-syncing every minute. It exists so the user sees a running clock. It is
 never sent to the server and never recorded. When the user clicks, the server asks the time API
 again; the optimistic value on screen is replaced by the recorded one.
+
+**Two stored times are not readings, and are marked as such.** Everything an employee records
+(clock-in, break start, break end, clock-out) is an external reading. Two other writes cannot be:
+
+- *A manager's correction* is a time a person typed, because the point of a correction is that
+  the recorded reading was wrong. It never uses the browser or server clock. The shift is flagged
+  `isCorrected`, the old and new values go to the audit trail, the audit entry itself is stamped
+  with an external reading, "not in the future" is judged against the external time, and a
+  correction is refused with 503 when the time source is down.
+- *An automatically closed shift* ends at clock-in + the maximum length: an external reading plus
+  a configured constant. The shift is flagged `AutoClosed` and audited the same way.
 
 **The one place the server clock is used.** JWT lifetimes (`iat`, `exp`) use the server clock,
 because the JWT validator also checks them against the server clock. That is `SystemClock`,
