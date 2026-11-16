@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using TrackOps.Api.Auth;
+using TrackOps.Api.Http;
 using TrackOps.Api.Middleware;
 using TrackOps.Application;
 using TrackOps.Application.Contracts;
@@ -92,7 +93,7 @@ public class ShiftsController : ControllerBase
 	}
 
 	/// <summary>HTTP QUERY (RFC 10008): a safe, idempotent read whose filter travels in the body.</summary>
-	[AcceptVerbs("QUERY")]
+	[HttpQuery]
 	[RateLimit(eRateLimitBucket.Search)]
 	public async Task<IActionResult> Search(
 		[FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] ShiftQuery? i_Query,
@@ -161,7 +162,7 @@ public class EmployeesController : ControllerBase
 		r_Employees = i_Employees;
 	}
 
-	[AcceptVerbs("QUERY")]
+	[HttpQuery]
 	[RateLimit(eRateLimitBucket.Search)]
 	public async Task<IActionResult> SearchEmployees(
 		[FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] EmployeeQuery? i_Query,
@@ -170,7 +171,7 @@ public class EmployeesController : ControllerBase
 		return Ok(await r_Employees.SearchEmployeesAsync(i_Query ?? new EmployeeQuery(), i_CancellationToken));
 	}
 
-	[AcceptVerbs("QUERY", Route = "shifts")]
+	[HttpQuery("shifts")]
 	[RateLimit(eRateLimitBucket.Search)]
 	public async Task<IActionResult> SearchShifts(
 		[FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] ShiftQuery? i_Query,

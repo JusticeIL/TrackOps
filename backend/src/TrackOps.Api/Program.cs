@@ -87,7 +87,7 @@ public static class Program
 			if (!string.IsNullOrEmpty(securityOptions.AllowedOrigin))
 			{
 				policy.WithOrigins(securityOptions.AllowedOrigin)
-					.WithMethods("GET", "POST", "PATCH", "DELETE", "QUERY")
+					.WithMethods(HttpMethods.Get, HttpMethods.Post, HttpMethods.Patch, HttpMethods.Delete, HttpMethods.Query)
 					.WithHeaders("Content-Type", CsrfTokens.k_HeaderName, "Idempotency-Key")
 					.AllowCredentials();
 			}

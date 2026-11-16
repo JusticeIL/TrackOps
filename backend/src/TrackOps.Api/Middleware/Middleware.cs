@@ -126,10 +126,9 @@ public class SecurityHeadersMiddleware
 	}
 }
 
-/// <summary>Rejects state-changing requests that do not carry a valid CSRF token. GET, HEAD, OPTIONS and QUERY are safe.</summary>
+/// <summary>Rejects state-changing requests that do not carry a valid CSRF token. GET, HEAD, OPTIONS and QUERY are safe methods.</summary>
 public class CsrfMiddleware
 {
-	private static readonly HashSet<string> sr_SafeMethods = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "GET", "HEAD", "OPTIONS", "QUERY" };
 	private readonly RequestDelegate r_Next;
 	private readonly CsrfTokens r_Tokens;
 	private readonly ILogger<CsrfMiddleware> r_Logger;
@@ -145,7 +144,7 @@ public class CsrfMiddleware
 	{
 		HttpRequest request = i_Context.Request;
 
-		if (!sr_SafeMethods.Contains(request.Method))
+		if (!isSafeMethod(request.Method))
 		{
 			bool isValid = r_Tokens.IsValid(
 				request.Headers[CsrfTokens.k_HeaderName].ToString(),
@@ -160,6 +159,11 @@ public class CsrfMiddleware
 		}
 
 		return r_Next(i_Context);
+	}
+
+	private static bool isSafeMethod(string i_Method)
+	{
+		return HttpMethods.IsGet(i_Method) || HttpMethods.IsHead(i_Method) || HttpMethods.IsOptions(i_Method) || HttpMethods.IsQuery(i_Method);
 	}
 }
 
