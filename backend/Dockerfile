@@ -1,5 +1,5 @@
 # Build once, publish two images: the API (two replicas) and the one-shot migrator.
-FROM mcr.microsoft.com/dotnet/sdk:10.0.404 AS build
+FROM mcr.microsoft.com/dotnet/sdk:11.0.100 AS build
 WORKDIR /src
 COPY global.json Directory.Build.props Directory.Packages.props TrackOps.sln ./
 COPY src/TrackOps.Domain/TrackOps.Domain.csproj src/TrackOps.Domain/
@@ -12,13 +12,13 @@ COPY src/ src/
 RUN dotnet publish src/TrackOps.Api -c Release -o /out/api --no-restore \
  && dotnet publish src/TrackOps.Migrator -c Release -o /out/migrator --no-restore
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0.15 AS migrator
+FROM mcr.microsoft.com/dotnet/aspnet:11.0.0 AS migrator
 WORKDIR /app
 COPY --from=build /out/migrator .
 USER $APP_UID
 ENTRYPOINT ["dotnet", "TrackOps.Migrator.dll"]
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0.15 AS api
+FROM mcr.microsoft.com/dotnet/aspnet:11.0.0 AS api
 WORKDIR /app
 COPY --from=build /out/api .
 ENV ASPNETCORE_HTTP_PORTS=8080 \

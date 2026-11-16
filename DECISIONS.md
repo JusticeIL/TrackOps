@@ -90,7 +90,7 @@ limits, and time-of-day premiums.
 | Same key sent twice at the same moment | One wins; the other sees the unique-key violation and replays the winner's response |
 | Same key reused for a different action | `409 idempotency_key_reused` |
 | Concurrent clock-out and break start | Both lock the shift row; the second one re-checks and fails cleanly |
-| Forgotten clock-out | A background job closes shifts open longer than `MAX_SHIFT_HOURS` (16) at clock-in + maximum, marks them `AutoClosed`, writes an audit row. A manager corrects the time. A Redis lock makes one replica run each round |
+| Forgotten clock-out | A background job closes shifts open longer than `MAX_SHIFT_HOURS` (16) at clock-in + maximum, marks them `AutoClosed`, writes an audit row. A manager corrects the time. A short-lived Redis lock stops two replicas from running a round at the same moment |
 | Time API down while the job runs | The round is skipped; the job fails closed too |
 | Shift crossing midnight | One shift; hours split per local day |
 | DST transitions | Covered above; tested for both 2027 transitions |
@@ -119,8 +119,16 @@ limits, and time-of-day premiums.
 
   A POST fallback was planned and then removed by decision: one way to search, fewer routes.
   **Known limit:** a client or proxy that rejects `QUERY` cannot search. It was verified through
-  nginx and Kestrel on both replicas, and browsers send it through `fetch`. ASP.NET Core on
-  .NET 10 maps it as a custom verb; .NET 11 adds first-class support.
+  nginx and Kestrel on both replicas, and browsers send it through `fetch`.
+- **Runtime: .NET 11, chosen because of `QUERY`.** ASP.NET Core has long been able to route an
+  arbitrary verb string, so `QUERY` also runs on .NET 9 and 10 (checked on .NET 9). .NET 11 is
+  the first version that names the method in the framework: `HttpMethods.Query` and
+  `HttpMethods.IsQuery`. The `[HttpQuery]` attribute (ours, a few lines, built on that constant),
+  the CORS policy and the CSRF "safe method" check all use them, so the code contains no
+  `"QUERY"` string of its own. .NET 11 ships no `[HttpQuery]` attribute and no `MapQuery`.
+  **Trade-off:** .NET 11 is a standard-term support release, not LTS, and 11.0.0 was its first
+  release, with no patch yet, when this was built. For a product meant to run for years the LTS
+  line (.NET 10) with the verb mapped as a string would be the conservative choice.
 - `PUT` is not used; no endpoint was invented to use it.
 - Another user's shift returns `404`, not `403`, so ids cannot be probed.
 
@@ -191,6 +199,7 @@ Sidebar entries for dropped screens were removed, so there are no dead links.
 | Plan | What was built | Why |
 |---|---|---|
 | ASP.NET's built-in antiforgery | A small HMAC-signed double-submit token | The built-in one needs data-protection keys shared between replicas, which means another package and key storage; 40 lines with one env secret do the same and are easier to explain |
+| .NET 10 LTS | .NET 11 | Decided after the build, to use the framework's own `QUERY` support (section 5). Moving took a retarget, one deprecated EF Core call and a rebuild; all tests pass on it |
 | snake_case column names | EF Core's default PascalCase | Less mapping code; the names in the plan were illustrative |
 | "Background queue for slow jobs" | One hosted job (auto-close and idempotency clean-up) | Nothing else in scope is slow; a general queue would have no user |
 | `GET /time` returns 503 when the source is down | It keeps serving from the last reading plus monotonic time, and returns 503 only if no reading was ever obtained | For display that is still correct, and the clock does not go blank during a short outage |
@@ -212,6 +221,7 @@ Sidebar entries for dropped screens were removed, so there are no dead links.
 **Known limits:**
 
 - Depends on free public time APIs with unknown rate limits and no SLA.
+- Runs on .NET 11.0.0, the first release of a non-LTS line (section 5).
 - No POST fallback for `QUERY` (section 5).
 - In the hour that repeats when DST ends, a manager typing a wall-clock time gets the earlier of
   the two instants.

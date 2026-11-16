@@ -268,6 +268,9 @@ uses a professionally issued certificate.
   **Resolved after the build (2026-11-16):** QUERY was the owner's own choice, not a request
   from the team lead. README and DECISIONS.md present it as a deliberate decision with its
   reasons and its limit, and attribute nothing to the team lead.
+  **Runtime changed after the build (2026-11-17):** the owner chose to move from .NET 10 LTS to
+  .NET 11 so that the runtime choice is genuinely about QUERY (`HttpMethods.Query`). Every
+  ".NET 10" above describes the plan as approved, not the result. See DECISIONS.md, section 5.
 
 ### Tiering
 
