@@ -63,7 +63,8 @@ Every error is `application/problem+json` (RFC 9457):
 | 404 | `not_found` (also returned for another user's shift) |
 | 409 | `shift_already_open`, `no_open_shift`, `break_already_open`, `no_open_break`, `stale_version`, `shift_overlap`, `idempotency_key_reused` |
 | 429 | `rate_limited` (with `Retry-After`) |
-| 503 | `time_source_unavailable` (with `Retry-After`) |
+| 500 | `internal_error` (no details are returned) |
+| 503 | `time_source_unavailable` (with `Retry-After`), `dependency_unavailable` |
 
 ### Idempotency
 
@@ -135,7 +136,7 @@ No password is stored or compared.
 
 | Method | Path | Role | Success | Notes |
 |---|---|---|---|---|
-| GET | `/time` | Employee | 200 `{ utc, zone, offsetSeconds, source }` | For seeding the display clock only. 503 when the time source is down. |
+| GET | `/time` | Employee | 200 `{ utc, zone, offsetSeconds, source }` | For seeding the display clock only: the latest external reading plus monotonic elapsed time. 503 only when no reading has ever been obtained. |
 
 ### Shifts
 
