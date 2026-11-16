@@ -29,3 +29,9 @@ Thumbs.db
 
 # Claude Code local-only settings
 .claude/settings.local.json
+
+# graphify (local code knowledge graph): its environment, its output and the local notes for it
+.graphify-venv/
+graphify-out/
+.graphifyignore
+.claude/rules/graphify.md
