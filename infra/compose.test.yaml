@@ -16,6 +16,8 @@ x-test-env: &test-env
   # All tests come from one address; the sign-in limit would otherwise stop the suite.
   RateLimit__SignInPerMinute: ${TEST_SIGN_IN_PER_MINUTE:-100000}
   AutoClose__IntervalSeconds: "3"
+  # Long enough for a 25 h DST-day shift; the auto-close test jumps 31 h.
+  WorkRules__MaxShiftHours: "30"
 
 services:
   time-stub:
