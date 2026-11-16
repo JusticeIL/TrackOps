@@ -20,7 +20,7 @@ What was checked, what was found and fixed, and what proves it. "Test" names a p
 | Secrets only through the environment | Done | Audit table below; history check below |
 | No exposed files or endpoints | Done | `test_health_endpoints_are_not_reachable_from_outside`; only the gateway publishes a port |
 | Debug off in production | Done | `test_errors_do_not_leak_internals`, `test_responses_do_not_reveal_server_software` |
-| Dependency vulnerabilities | Clean on 2026-11-16 | Scan output below |
+| Dependency vulnerabilities | Clean on 2026-11-17 | Scan output below |
 | Security logging | Done | Event list below |
 
 ## Found and fixed while building
@@ -38,7 +38,7 @@ What was checked, what was found and fixed, and what proves it. "Test" names a p
 ## How each defence works
 
 **SQL injection.** All data access goes through EF Core, which sends values as parameters. The
-two hand-written queries (row locks) use `FromSqlInterpolated`, which also parameterises. The only
+two hand-written queries (row locks) use `FromSql` with an interpolated string, which also parameterises. The only
 SQL built by string is in the migrator (`CREATE LOGIN`, which cannot take parameters); its inputs
 come from the environment, the name is checked against a strict pattern and the password is
 quote-escaped.
@@ -104,7 +104,7 @@ The API refuses to start when a required setting is missing or a key is too shor
 History check: `git log --all --name-only` contains no `.env` file, and a search of every commit
 for the values in the local `.env` finds nothing.
 
-## Dependency scan (2026-11-16)
+## Dependency scan (.NET packages 2026-11-17, on .NET 11; npm 2026-11-16)
 
 ```
 dotnet list backend/TrackOps.sln package --vulnerable --include-transitive

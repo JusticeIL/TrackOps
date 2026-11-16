@@ -9,22 +9,27 @@ API cannot be reached, nothing is recorded and the request fails with `503`.
 
 | Part | Technology |
 |---|---|
-| Backend | ASP.NET Core on .NET 10, EF Core |
+| Backend | ASP.NET Core on .NET 11, EF Core |
 | Database | Microsoft SQL Server 2022 |
 | Sessions, rate limits, cache | Redis |
 | Frontend | React + TypeScript (Vite), Hebrew, right-to-left |
 | Gateway | nginx in front of two backend replicas |
 | Tests | pytest, black-box against the running stack |
 
-The backend runs on .NET 10, the current LTS release.
+The backend runs on .NET 11.
 
 **Searches use the HTTP `QUERY` method** (RFC 10008, published June 2026). This was a deliberate
 choice. A search is a read, so it should be safe and repeatable like `GET`; but its filter
 (employee names, dates, free text) should not sit in the URL, where it ends up in browser
 history, proxy logs and server access logs. `QUERY` gives both: the filter travels in the request
-body, and the method is defined as safe and idempotent, which `POST` is not. On .NET 10 it is
-mapped as a custom verb with `[AcceptVerbs("QUERY")]`; first-class support starts in .NET 11.
-The trade-off and the missing fallback are in [DECISIONS.md](DECISIONS.md#5-api).
+body, and the method is defined as safe and idempotent, which `POST` is not.
+
+.NET 11 is the first version whose HTTP layer knows the method (`HttpMethods.Query`,
+`HttpMethods.IsQuery`). The API's `[HttpQuery]` attribute, its CORS policy and its CSRF check
+are built on those. Older versions can route `QUERY` too, as an arbitrary verb string; .NET 11
+was chosen so the method is a named part of the framework rather than a string literal. The
+price is that .NET 11 is a standard-term support release, not LTS. Both trade-offs, and the
+missing fallback, are in [DECISIONS.md](DECISIONS.md#5-api).
 
 Why things are built the way they are: [DECISIONS.md](DECISIONS.md).
 Security work, found / fixed / tested: [docs/SECURITY-REPORT.md](docs/SECURITY-REPORT.md).
@@ -177,7 +182,7 @@ docs/                   API contract and diagram, security report
 
 ## Working on the code
 
-- Backend: open `backend/TrackOps.sln` (needs the .NET 10 SDK). `TrackOps.sln.DotSettings` and
+- Backend: open `backend/TrackOps.sln` (needs the .NET 11 SDK; the containers build without it). `TrackOps.sln.DotSettings` and
   `.editorconfig` carry the coding standard. After a change, rebuild the containers:
   `docker compose up -d --build backend-1 backend-2`.
 - Frontend: `npm --prefix frontend install`, then `npm --prefix frontend run dev`. The dev server

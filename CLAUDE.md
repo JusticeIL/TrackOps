@@ -5,7 +5,7 @@ behaviour; it says why things are the way they are.
 
 ## What this is
 
-TrackOps: a shift clock. ASP.NET Core (.NET 10) + SQL Server + Redis + React, run with Docker
+TrackOps: a shift clock. ASP.NET Core (.NET 11) + SQL Server + Redis + React, run with Docker
 Compose. Two API replicas behind nginx. UI in Hebrew (RTL); code, commits and docs in English.
 
 ## Rules that must not be broken
@@ -42,7 +42,7 @@ tests/.venv/Scripts/python -m pytest tests/test_clock.py   # one file
 tests/.venv/Scripts/python -m pytest tests/test_static_clock.py   # needs no stack
 
 # Backend
-dotnet build backend/TrackOps.sln            # must stay at 0 warnings
+dotnet build backend/TrackOps.sln            # needs the .NET 11 SDK; must stay at 0 warnings
 docker compose up -d --build backend-1 backend-2
 
 # Frontend
@@ -115,8 +115,12 @@ In Frontend:
 
 ## Gotchas met while building
 
-- NuGet's default versions are now .NET 11 packages; versions are pinned to 10.x in
-  `backend/Directory.Packages.props`.
+- Package versions are pinned centrally in `backend/Directory.Packages.props`; keep them on the
+  11.x line together with `global.json`, `dotnet-tools.json` and the image tags in the Dockerfile.
+- Searches are mapped with `[HttpQuery]` (`TrackOps.Api.Http`), which wraps `HttpMethods.Query`.
+  Do not write the string `"QUERY"` in backend code.
+- Switching between the normal stack and the test overlay keeps Redis running, so state such as
+  rate-limit counters carries over for up to a minute.
 - On Windows, `localhost` is tried over IPv6 first and costs two seconds per request when only
   IPv4 is published. Tests use `127.0.0.1`.
 - The stub clock keeps ticking, so minute counts in tests are compared with a one-minute tolerance.

@@ -42,13 +42,17 @@ code is in `plans/01-api-contract-and-execution-plan.md`.
 | Self-signed TLS on localhost so `Secure` cookies and HSTS are real | Plain HTTP locally, with the reason stated in the README | Browsers reject self-signed certificates; production would use a real one |
 | Logo "ring and check" (its recommendation) | Logo "Tick T" | My preference |
 | 22 endpoints | 19 after removing the fallbacks | Follows from the first row |
+| Stay on .NET 10 LTS and word the docs accurately (its recommendation) | Move to .NET 11 | I wanted the runtime choice to be about `QUERY` for real. It showed me what .NET 11 actually adds (`HttpMethods.Query`, `HttpMethods.IsQuery`, and no attribute), then did the move and reran everything |
 
 ## Where Claude Code corrected me
 
 - I asked for the docs to say that .NET 10 was used "for the QUERY support". It pointed out that
   this is not accurate: .NET 10 has no built-in `QUERY` support; the method is mapped as a custom
-  verb, which works on older versions too, and first-class support starts in .NET 11. The README
-  says it the accurate way.
+  verb, which works on older versions too, and first-class support starts in .NET 11. When I
+  repeated the claim it did not argue from memory: it ran the same mapping on the .NET 9 SDK and
+  showed me the response. That is what led to the move to .NET 11 instead of a wrong sentence.
+- It had written "as the team lead requested" about `QUERY` on my word. When I said the choice was
+  mine, it removed the attribution rather than leave a claim nobody could back.
 
 ## Where Claude Code got something wrong and fixed it
 
@@ -62,6 +66,9 @@ code is in `plans/01-api-contract-and-execution-plan.md`.
 | The first full test run was extremely slow | It read the gateway log and saw two seconds per request | `localhost` was being tried over IPv6 first; tests now use `127.0.0.1`. About 3 minutes instead of more than 10 |
 | A few assertions demanded exact minute counts while the stub clock keeps ticking | Test failures off by one minute | A one-minute tolerance, with the reason in a comment |
 | After rebuilding the API containers the gateway could keep stale addresses | Noticed while restarting containers | nginx now re-resolves names through Docker's DNS |
+| After the move to .NET 11 one test failed and it first looked like a regression | It compared log timestamps instead of guessing | The cause was a job lock left in Redis by the previous stack, which used a 5-minute interval. The lock's lifetime is now capped at 30 s |
+| On .NET 11 the new attribute did not compile (name clash with an inherited property) and EF Core flagged a deprecated call | Compiler output | Qualified the name; switched to `FromSql` |
+| A test for SQL injection in the manager search failed on a second run against the same database | Rerunning the suite on used data | Another test stores that exact payload as a note; the test now checks that only literal matches come back |
 | The plan said "built-in antiforgery" | While implementing: it needs data-protection keys shared between replicas | A small HMAC-signed token; listed as a deviation in DECISIONS.md |
 
 ## What was cut or left unverified
