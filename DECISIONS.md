@@ -156,14 +156,13 @@ Two roles only: Employee and Manager. Manager routes are locked at controller le
   `frontend/src/shared/styles/tokens.css`. Lighthouse accessibility: 100 on all five screens.
 - **Font:** Heebo, bundled and served by our own nginx (Hebrew + Latin, three weights,
   `font-display: swap`). No CDN.
-- **"Re-use React containers"** was read as container/presentational components. A container
+- **Reusable React components** through a container/presentational split. A container
   fetches and holds state; presentational components take props. One `ShiftTable`, one filter bar
   and one pagination control serve History, the Calendar day list and Employees.
 - TanStack Query provides request de-duplication, caching, optimistic updates with rollback and
   parallel requests. React Router provides one lazily loaded chunk per screen.
-- Wireframes were used for layout and flow, not as a specification.
 
-### Screens dropped from the wireframes
+### Screens considered and left out
 
 | Dropped | Reason |
 |---|---|
@@ -173,11 +172,11 @@ Two roles only: Employee and Manager. Manager routes are locked at controller le
 | Profile | With mock sign-in there is nothing to edit; sign-out moved to the header menu |
 | Company-rules card | Static content |
 | Language switcher | Hebrew only (see above) |
-| Salary, payslips, vacation and sick-day tiles on the "Data" screen | Payroll is out of scope; the screen became Shift History |
+| Salary, payslips, vacation and sick-day tiles | Payroll is out of scope; the statistics screen became Shift History |
 | Add / edit / delete shift on the Calendar | Employees cannot invent shifts; a manager corrects existing ones with an audit trail |
 | Phone, e-mail and photo columns on Employees | No such data is collected; the screen shows shifts instead |
 
-Sidebar entries for dropped screens were removed, so there are no dead links.
+None of them has a sidebar entry, so there are no dead links.
 
 ## 8. Operations
 
@@ -191,7 +190,7 @@ Sidebar entries for dropped screens were removed, so there are no dead links.
 - **Local transport is plain HTTP.** A self-signed certificate would only produce browser
   warnings. `Secure` cookies and HSTS are on by default and switched off only in the local `.env`;
   production uses a real certificate at the proxy.
-- **No CI/CD, by choice.** The assignment is a local repository; there is no `.github` folder and
+- **No CI/CD, by choice.** This is a local repository; there is no `.github` folder and
   no pipeline. The same commands a pipeline would run are in the README.
 
 ## 9. Deviations from the approved plan

@@ -3,7 +3,7 @@
 .env.*
 !.env.example
 
-# Lecturer's coding-standards PDF stays local
+# Local reference material, not part of the repository
 docs/reference/
 
 # .NET

@@ -3,7 +3,7 @@
 Base URL (local): `http://localhost:8080/api/v1`
 
 This file, `rest-api.drawio` and the two PNG exports describe the same contract. When the API
-changes, update the endpoint table in `tools/build_api_diagram.py`, regenerate the diagram, and
+changes, update the endpoint tree in `tools/build_api_diagram.py`, regenerate the diagram, and
 update this file in the same commit.
 
 ![API map](rest-api.png)

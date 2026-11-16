@@ -182,8 +182,8 @@ docs/                   API contract and diagram, security report
 
 ## Working on the code
 
-- Backend: open `backend/TrackOps.sln` (needs the .NET 11 SDK; the containers build without it). `TrackOps.sln.DotSettings` and
-  `.editorconfig` carry the coding standard. After a change, rebuild the containers:
+- Backend: open `backend/TrackOps.sln` (needs the .NET 11 SDK; the containers build without it). The code-style settings
+  sit next to the solution and are picked up by the IDE. After a change, rebuild the containers:
   `docker compose up -d --build backend-1 backend-2`.
 - Frontend: `npm --prefix frontend install`, then `npm --prefix frontend run dev`. The dev server
   proxies `/api` to the running stack.
@@ -191,8 +191,9 @@ docs/                   API contract and diagram, security report
 
 ### API diagram
 
-The diagram is generated from the endpoint table in `tools/build_api_diagram.py`. When the API
-changes, edit that table and `docs/api/API.md` together, then:
+The API map is drawn as a folder tree: each folder is a path segment and each endpoint is a leaf.
+It is generated from the endpoint tree in `tools/build_api_diagram.py`. When the API changes, edit
+that tree and `docs/api/API.md` together, then:
 
 ```bash
 python tools/build_api_diagram.py
