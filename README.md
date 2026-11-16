@@ -82,6 +82,10 @@ There is no manual database step. On `docker compose up`:
    least-privilege login `APP_DB_LOGIN` that the API uses. It then exits.
 3. The two API replicas start only after the migrator succeeded.
 
+The schema, with its keys, constraints and indexes:
+
+![Database schema](docs/db/schema.png)
+
 To look at the data, the reporting views `dbo.v_ShiftReport` and `dbo.v_BreakReport` list every
 shift and break with derived minutes:
 
@@ -175,8 +179,8 @@ backend/                TrackOps.sln
 frontend/src/           app (router, shell), features (one folder per screen), shared (api, time, ui)
 infra/                  nginx gateway config, test overlay
 tests/                  pytest suites and the stub time API
-tools/                  API diagram generator, Lighthouse runner
-docs/                   API contract and diagram, security report
+tools/                  API and database diagram generators, Lighthouse runner
+docs/                   API contract and diagram, database diagram, security report
 .claude/                plans and the log of working with Claude Code
 ```
 
@@ -199,6 +203,14 @@ that tree and `docs/api/API.md` together, then:
 python tools/build_api_diagram.py
 draw.io -x -f png -s 2 -b 24 -p 1 -o docs/api/rest-api.png docs/api/rest-api.drawio
 draw.io -x -f png -s 2 -b 24 -p 2 -o docs/api/rest-api-clock-in-flow.png docs/api/rest-api.drawio
+```
+
+The database diagram is generated the same way from `tools/build_db_diagram.py`, which mirrors the
+migrations:
+
+```bash
+python tools/build_db_diagram.py
+draw.io -x -f png -s 2 -b 24 -o docs/db/schema.png docs/db/schema.drawio
 ```
 
 (`draw.io` is the draw.io Desktop executable.)
