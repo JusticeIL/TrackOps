@@ -53,7 +53,8 @@ npm --prefix frontend run dev                # dev server, proxies /api to local
 dotnet ef migrations add <Name> --project src/TrackOps.Infrastructure --startup-project src/TrackOps.Infrastructure --output-dir Persistence/Migrations
 ```
 
-After generating a migration, read it. EF Core once merged two indexes on one column and dropped
+After generating a migration, read it, and update the tables in `tools/build_db_diagram.py`
+(then regenerate `docs/db/schema.drawio` and its PNG) in the same commit. EF Core once merged two indexes on one column and dropped
 a unique index without any warning.
 
 ## Architecture in one screen

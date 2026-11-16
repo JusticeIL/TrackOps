@@ -56,6 +56,8 @@ The alternative considered, "clock-in + shift minutes", was rejected: an open sh
 minutes yet; breaks and corrections need real instants; DST arithmetic is only right on
 instants; and a stored duration can drift from its endpoints.
 
+The tables, keys, constraints and indexes are drawn in `docs/db/schema.png`.
+
 **Invariants live in the database**, so they hold for any number of replicas:
 
 | Invariant | Enforced by |

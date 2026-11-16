@@ -68,6 +68,7 @@ code is in `plans/01-api-contract-and-execution-plan.md`.
 | On .NET 11 the new attribute did not compile (name clash with an inherited property) and EF Core flagged a deprecated call | Compiler output | Qualified the name; switched to `FromSql` |
 | A test for SQL injection in the manager search failed on a second run against the same database | Rerunning the suite on used data | Another test stores that exact payload as a note; the test now checks that only literal matches come back |
 | Simultaneous retries with one Idempotency-Key could get 409 instead of the stored 201. The database was right (one shift); the answer to the retry was wrong | A full test run failed once on a test that had passed many times; it reasoned out the interleaving instead of rerunning until green | A conflict is now re-checked against the stored key before it is reported; the race is repeated five times in the tests |
+| `Users` had a `CreatedAtUtc` column that nothing set, so every row held 0001-01-01 | Reading the real migration to draw the database diagram, instead of drawing from memory | Dropped the column with a migration |
 | The plan said "built-in antiforgery" | While implementing: it needs data-protection keys shared between replicas | A small HMAC-signed token; listed as a deviation in DECISIONS.md |
 
 ## What was cut or left unverified
