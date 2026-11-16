@@ -6,9 +6,7 @@ code is in `plans/01-api-contract-and-execution-plan.md`.
 
 ## How the work was organised
 
-1. **One detailed prompt** with role, context, scope, constraints and success metrics, plus four
-   inputs: the assignment e-mail, the Figma wireframes, the course coding standard (PDF) and the
-   ReSharper settings.
+1. **One detailed prompt** with role, context, scope, constraints and success metrics.
 2. **Plan mode with two approval gates.** Gate 1: the REST contract and its diagram. Gate 2: the
    execution plan (schema, time source, overtime rule, risks, cut order). Nothing was scaffolded
    or committed before both were approved.
@@ -17,7 +15,7 @@ code is in `plans/01-api-contract-and-execution-plan.md`.
 
 ## Where Claude Code helped
 
-- **Reading before building.** It read all four inputs and checked the environment first, and
+- **Checking before building.** It checked the environment first, and
   reported what was missing (draw.io Desktop, a supported .NET SDK, Docker not running) instead of
   assuming.
 - **Verifying claims.** It confirmed that HTTP `QUERY` is a published standard (RFC 10008), probed

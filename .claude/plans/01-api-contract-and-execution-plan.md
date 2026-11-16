@@ -1,8 +1,8 @@
-# TrackOps — shift-clock home assignment
+# TrackOps — shift clock
 
 ## Context
 
-Job-application home assignment, due **Sunday 2026-11-22 08:00 Israel time**. Build a shift-clock
+Due **Sunday 2026-11-22 08:00 Israel time**. Build a shift-clock
 system (ASP.NET Core + SQL Server + React) where every clock-in/out timestamp comes from an
 external time API for Europe/Zurich. Few features, done deeply and justified; everything else is
 documented in DECISIONS.md. The owner presents it in 10 minutes and then changes code live, so
@@ -13,21 +13,13 @@ QUERY only, session-resource auth). Now at Gate 2; approving this plan is the "g
 Nothing is scaffolded, written or committed yet. The project folder is empty and not a git repo.
 
 Note: plan mode fixes this file's location under `~/.claude/plans/`. After "go" it is copied to
-`<repo>/.claude/plans/` so it ships with the repo, as the email requires.
+`<repo>/.claude/plans/` so it ships with the repo.
 
-## Inputs read
+## Coding conventions
 
-| Input | Result |
-|---|---|
-| Assignment email (Hebrew) | Read. No conflict with the prompt. 22/11/2026 is a Sunday. |
-| Figma wireframes | Read via Figma MCP: Sign in 2:2, Dashboard 2:609, Data 49:559, Calendar 64:1472, Employees 66:2144. |
-| C# coding standards PDF | Read (via `pdftotext`; the Read tool lacks poppler). |
-| ReSharper `.DotSettings` | Read. |
-
-Coding rules that shape the backend: `m_` fields, `r_` readonly, `s_`/`sr_` static, `k_` consts,
-`i_`/`o_`/`io_` parameters, `e`-prefixed enums, `v_` local const bools, private methods
+The backend follows these C# conventions: `m_` fields, `r_` readonly, `s_`/`sr_` static, `k_`
+consts, `i_`/`o_`/`io_` parameters, `e`-prefixed enums, `v_` local const bools, private methods
 lowerCamel, explicit types (no `var`), tabs, braces always, one `return` per method.
-The PDF (braces always) is stricter than the .DotSettings (braces optional); the PDF wins.
 
 ## Environment findings
 
@@ -144,7 +136,7 @@ it is built and run.
 
 | Piece | Choice | Why |
 |---|---|---|
-| Backend | ASP.NET Core on .NET 10 LTS, controllers | Controllers suit the course conventions; `[AcceptVerbs("QUERY")]` |
+| Backend | ASP.NET Core on .NET 10 LTS, controllers | Controllers suit the naming conventions; `[AcceptVerbs("QUERY")]` |
 | Data access | EF Core (SQL Server provider) only | Parameterized by default, projections, migrations; no second ORM |
 | Redis client | StackExchange.Redis | Sessions, rate limits, cache, job lock |
 | Auth | Microsoft JwtBearer + built-in antiforgery | No custom crypto |
@@ -164,7 +156,7 @@ after checking the registries; I will not guess tag names here.
 
 ```
 compose.yaml  .env.example  .gitignore  README.md  DECISIONS.md  CLAUDE.md
-backend/   TrackOps.sln  TrackOps.sln.DotSettings  .editorconfig  Dockerfile
+backend/   TrackOps.sln  code-style settings  .editorconfig  Dockerfile
   src/TrackOps.Api             controllers, middleware (CSRF, rate limit, headers), Program.cs
   src/TrackOps.Application     use-case services, DTOs, ITimeProvider, overtime calculator
   src/TrackOps.Domain          entities, enums, rules; no dependencies
@@ -174,7 +166,7 @@ frontend/  Dockerfile  src/app (router, shell)  src/features/{auth,dashboard,his
            src/shared/{ui,api,time,styles}
 tests/     pytest suites, static clock check, time-stub/ (stub time API container)
 infra/     nginx/ (config), compose.test.yaml
-docs/      api/{API.md,rest-api.drawio,*.png}  SECURITY-REPORT.md  reference/ (PDF, gitignored)
+docs/      api/{API.md,rest-api.drawio,*.png}  SECURITY-REPORT.md
 .claude/   plans/, work log
 ```
 
@@ -310,7 +302,7 @@ Claude co-author trailer.
 2. **Free time APIs**: rate limits unknown, `worldtimeapi.org` already down. Two providers and
    fail-closed; tests never touch the real APIs.
 3. **SQL Server in Docker**: needs about 2 GB RAM and a slow first start; Docker is not running now.
-4. **Course C# conventions vs. framework conventions** (`i_` parameters and model binding,
+4. **Project C# conventions vs. framework conventions** (`i_` parameters and model binding,
    single return). Handled with explicit binding names; generated migrations are exempt.
 5. **Plain HTTP locally** means `Secure` and HSTS are exercised only by the one switched-on test
    run, not by everyday use.

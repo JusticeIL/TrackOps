@@ -182,8 +182,8 @@ docs/                   API contract and diagram, security report
 
 ## Working on the code
 
-- Backend: open `backend/TrackOps.sln` (needs the .NET 11 SDK; the containers build without it). `TrackOps.sln.DotSettings` and
-  `.editorconfig` carry the coding standard. After a change, rebuild the containers:
+- Backend: open `backend/TrackOps.sln` (needs the .NET 11 SDK; the containers build without it). The code-style settings
+  sit next to the solution and are picked up by the IDE. After a change, rebuild the containers:
   `docker compose up -d --build backend-1 backend-2`.
 - Frontend: `npm --prefix frontend install`, then `npm --prefix frontend run dev`. The dev server
   proxies `/api` to the running stack.

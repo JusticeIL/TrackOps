@@ -76,7 +76,7 @@ re-check, write, store the response.
 Frontend: `features/<screen>/` holds a container page plus its presentational parts;
 `shared/` holds the API client, the display clock and reusable UI (`ShiftTable`, `ShiftFilters`).
 
-## C# coding standard (course standard; follow it exactly)
+## C# conventions (follow them exactly)
 
 - Fields: `m_Name`; readonly `r_Name`; static `s_Name`; static readonly `sr_Name`; constants
   `k_Name`. Auto-properties are PascalCase.
