@@ -28,8 +28,6 @@ public class User
 	public string DisplayName { get; set; } = string.Empty;
 
 	public eUserRole Role { get; set; }
-
-	public DateTime CreatedAtUtc { get; set; }
 }
 
 /// <summary>
