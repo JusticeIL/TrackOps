@@ -1,0 +1,43 @@
+.employee-picker {
+  position: relative;
+  min-inline-size: 220px;
+}
+
+.employee-options {
+  position: absolute;
+  inset-block-start: calc(100% + var(--space-1));
+  inset-inline: 0;
+  z-index: 5;
+  list-style: none;
+  margin: 0;
+  padding: var(--space-2);
+  max-block-size: 260px;
+  overflow-y: auto;
+}
+
+.employee-option {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-small);
+  cursor: pointer;
+  text-align: start;
+}
+
+.employee-option[aria-selected='true'],
+.employee-option:hover {
+  background: var(--ink);
+  color: var(--accent);
+}
+
+.audit-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-3);
+  font-size: 0.9375rem;
+}
+
+.audit-list li {
+  padding-block-end: var(--space-3);
+  border-block-end: 1px solid var(--line);
+}

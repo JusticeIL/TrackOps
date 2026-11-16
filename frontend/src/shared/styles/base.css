@@ -352,6 +352,11 @@ textarea {
   color: var(--muted);
 }
 
+/* Latin cells are left-to-right inside, but still line up with their right-aligned Hebrew headers. */
+.table td.latin {
+  text-align: end;
+}
+
 .table td.wrap {
   white-space: normal;
   max-inline-size: 280px;

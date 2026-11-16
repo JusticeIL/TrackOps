@@ -1,0 +1,74 @@
+.month-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-block-end: var(--space-4);
+}
+
+.month-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.month-weekday {
+  text-align: center;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--muted);
+  padding-block: var(--space-1);
+}
+
+.day-cell {
+  display: grid;
+  align-content: start;
+  justify-items: start;
+  gap: 2px;
+  min-block-size: 84px;
+  padding: var(--space-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  background: var(--surface);
+  cursor: pointer;
+  text-align: start;
+}
+
+.day-cell:hover {
+  border-color: var(--line-strong);
+}
+
+.day-cell[aria-pressed='true'] {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
+}
+
+.day-cell[aria-pressed='true'] .badge-overtime {
+  background: var(--accent);
+  color: var(--ink);
+}
+
+.day-today {
+  border-color: var(--accent-ink);
+  border-width: 2px;
+}
+
+.day-number {
+  font-weight: 700;
+}
+
+.day-worked {
+  font-size: 0.875rem;
+}
+
+.month-totals {
+  margin-block-start: var(--space-4);
+}
+
+@media (max-width: 860px) {
+  .day-cell {
+    min-block-size: 64px;
+    padding: var(--space-1);
+  }
+}
