@@ -19,12 +19,13 @@ public class AutoCloseOptions
 /// <summary>
 /// Handles the forgotten clock-out: a shift open longer than the allowed maximum is closed at
 /// clock-in + maximum, marked AutoClosed and written to the audit trail, so a manager can correct it.
-/// A Redis lock lets only one replica run each round. If the external time is unavailable the round
-/// is skipped: the job fails closed like every other writer.
+/// A short-lived Redis lock stops two replicas from running a round at the same moment. If the
+/// external time is unavailable the round is skipped: the job fails closed like every other writer.
 /// </summary>
 public class ShiftAutoCloseJob : BackgroundService
 {
 	private const string k_LockKey = "lock:shift-auto-close";
+	private const int k_MaxLockSeconds = 30;
 	private const int k_BatchSize = 100;
 	private const int k_IdempotencyRetentionHours = 24;
 	private readonly IServiceScopeFactory r_ScopeFactory;
@@ -51,13 +52,17 @@ public class ShiftAutoCloseJob : BackgroundService
 	{
 		TimeSpan interval = TimeSpan.FromSeconds(r_Options.IntervalSeconds);
 
+		// The lock only has to outlive one round. Tying it to the interval would let a lock left by a
+		// deployment with a long interval block the job after a redeploy.
+		TimeSpan lockLifetime = TimeSpan.FromSeconds(Math.Min(r_Options.IntervalSeconds, k_MaxLockSeconds));
+
 		while (r_Options.IsEnabled && !i_StoppingToken.IsCancellationRequested)
 		{
 			try
 			{
 				await Task.Delay(interval, i_StoppingToken);
 
-				bool hasLock = await r_Redis.GetDatabase().StringSetAsync(k_LockKey, Environment.MachineName, interval, When.NotExists);
+				bool hasLock = await r_Redis.GetDatabase().StringSetAsync(k_LockKey, Environment.MachineName, lockLifetime, When.NotExists);
 
 				if (hasLock)
 				{
