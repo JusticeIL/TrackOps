@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using TrackOps.Application.Abstractions;
 using TrackOps.Application.Contracts;
@@ -104,10 +105,36 @@ public class ShiftReadService
 	public async Task<CalendarMonthDto> GetMonthAsync(int i_UserId, string i_Month, CancellationToken i_CancellationToken)
 	{
 		DateOnly firstDay = parseMonth(i_Month);
+		string? cachedJson = await r_CalendarCache.GetAsync(i_UserId, i_Month);
+		CalendarMonthDto month;
+
+		if (cachedJson != null)
+		{
+			month = JsonSerializer.Deserialize<CalendarMonthDto>(cachedJson, JsonDefaults.sr_Options)!;
+		}
+		else
+		{
+			List<ShiftDto> shifts = await loadShiftsTouchingAsync(i_UserId, firstDay, firstDay.AddMonths(1), i_CancellationToken);
+
+			month = await calculateMonthAsync(i_Month, firstDay, shifts, i_CancellationToken);
+
+			// A month with an open shift changes every minute, so only settled months are cached.
+			// Any write to this user's shifts invalidates the cache (see ICalendarCache).
+			if (shifts.All(shift => shift.ClockOutUtc.HasValue))
+			{
+				await r_CalendarCache.SetAsync(i_UserId, i_Month, JsonSerializer.Serialize(month, JsonDefaults.sr_Options));
+			}
+		}
+
+		return month;
+	}
+
+	private async Task<CalendarMonthDto> calculateMonthAsync(string i_Month, DateOnly i_FirstDay, List<ShiftDto> i_Shifts, CancellationToken i_CancellationToken)
+	{
+		DateOnly firstDay = i_FirstDay;
 		DateOnly nextMonth = firstDay.AddMonths(1);
 		TimeReading now = await r_DisplayClock.GetUtcNowAsync(i_CancellationToken);
-		List<ShiftDto> shifts = await loadShiftsTouchingAsync(i_UserId, firstDay, nextMonth, i_CancellationToken);
-		List<WorkSpan> spans = shifts.Select(ShiftMapper.ToWorkSpan).ToList();
+		List<WorkSpan> spans = i_Shifts.Select(ShiftMapper.ToWorkSpan).ToList();
 		CalendarMonthDto month = new CalendarMonthDto { Month = i_Month, DailyTargetMinutes = r_WorkRules.DailyTargetMinutes };
 
 		for (DateOnly day = firstDay; day < nextMonth; day = day.AddDays(1))

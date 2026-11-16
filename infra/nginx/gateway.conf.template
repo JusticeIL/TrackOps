@@ -1,9 +1,14 @@
 # Gateway: the only container with a published port.
 # /api/ goes to the two API replicas (round-robin); everything else is the React app.
 
+# Docker's internal DNS. Container addresses are looked up again every few seconds, so the
+# gateway keeps working when a replica or the frontend is rebuilt and gets a new address.
+resolver 127.0.0.11 valid=5s ipv6=off;
+
 upstream trackops_api {
-    server backend-1:8080 max_fails=2 fail_timeout=5s;
-    server backend-2:8080 max_fails=2 fail_timeout=5s;
+    zone trackops_api 64k;
+    server backend-1:8080 resolve max_fails=2 fail_timeout=5s;
+    server backend-2:8080 resolve max_fails=2 fail_timeout=5s;
     keepalive 16;
 }
 
@@ -39,7 +44,9 @@ server {
     }
 
     location / {
-        proxy_pass http://frontend:8080;
+        # A variable makes nginx resolve the name per request instead of once at start-up.
+        set $frontend_upstream http://frontend:8080;
+        proxy_pass $frontend_upstream;
         proxy_set_header Host $http_host;
         include /etc/nginx/snippets/security-headers.conf;
         add_header Strict-Transport-Security "${HSTS_HEADER_VALUE}" always;
