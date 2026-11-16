@@ -1,0 +1,21 @@
+.sign-in {
+  min-block-size: 100vh;
+  display: grid;
+  place-items: center;
+  padding: var(--space-4);
+}
+
+.sign-in-card {
+  inline-size: min(420px, 100%);
+}
+
+.sign-in-brand {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-2);
+  text-align: center;
+}
+
+.sign-in-brand h1 {
+  font-size: 1.5rem;
+}

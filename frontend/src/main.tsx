@@ -10,11 +10,10 @@ import '@fontsource/heebo/latin-500.css'
 import '@fontsource/heebo/latin-700.css'
 import './shared/styles/tokens.css'
 import './shared/styles/base.css'
+import { App } from './app/App'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <main className="main">
-      <h1>TrackOps</h1>
-    </main>
+    <App />
   </StrictMode>,
 )
