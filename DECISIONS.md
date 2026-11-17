@@ -203,10 +203,10 @@ role until it ends (24 hours at most).
 "Forms and data", "Requests and reports" and the Events tab under the calendar are shown as
 pictures of the planned screens. Nothing in the task needs them, and building them for real
 (leave balances, a request workflow, an events calendar) would each be a feature with its own
-data and rules. A picture shows where the product is going without pretending the data exists:
-every such screen states that it is a sample, and each picture carries a text alternative. Two
-parts of the "Forms and data" design were left out even as pictures: the salary and payslip
-cards and the form downloads.
+data and rules. A picture shows where the product is going without building it; each picture
+carries a text alternative. The numbers in the pictures are the design's sample values, not
+data from the system. Two parts of the "Forms and data" design were left out even as pictures:
+the salary and payslip cards and the form downloads.
 
 The Calendar screen is titled "Shifts and events". Below the month, two tabs show the selected
 day: Shifts (the real shifts of that day) and Events (a picture).

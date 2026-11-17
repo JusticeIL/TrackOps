@@ -417,11 +417,6 @@ input[type='checkbox'] {
   mix-blend-mode: multiply;
 }
 
-.preview-note {
-  margin-block-end: var(--space-4);
-  font-size: 0.875rem;
-}
-
 .skeleton {
   display: block;
   border-radius: var(--radius-small);
