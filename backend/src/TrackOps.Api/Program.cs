@@ -45,6 +45,7 @@ public static class Program
 		SecurityOptions securityOptions = configuration.GetSection("Security").Get<SecurityOptions>() ?? new SecurityOptions();
 		RateLimitOptions rateLimitOptions = configuration.GetSection("RateLimit").Get<RateLimitOptions>() ?? new RateLimitOptions();
 		WorkRules workRules = configuration.GetSection("WorkRules").Get<WorkRules>() ?? new WorkRules();
+		AuthRules authRules = configuration.GetSection("Auth").Get<AuthRules>() ?? new AuthRules();
 		IServiceCollection services = i_Builder.Services;
 
 		i_Builder.Logging.ClearProviders();
@@ -59,6 +60,7 @@ public static class Program
 		services.AddSingleton(securityOptions);
 		services.AddSingleton(rateLimitOptions);
 		services.AddSingleton(workRules);
+		services.AddSingleton(authRules);
 		services.AddSingleton<JwtIssuer>();
 		services.AddSingleton<AuthCookies>();
 		services.AddSingleton<CsrfTokens>();

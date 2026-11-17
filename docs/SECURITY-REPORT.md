@@ -59,6 +59,8 @@ accepted.
 
 **Authorization.** The manager policy is on the controller class, so a new manager action cannot
 be added without it. Own-data endpoints filter by the caller's user id in the query itself.
+The manager role is off by default: with `MANAGER_USERNAME` empty nobody is a manager and the
+manager routes answer 403 to every caller (`test_without_a_configured_manager_everyone_is_an_employee`).
 
 **Rate limiting.** Counters live in Redis and are incremented by one atomic script, so both
 replicas share them. Limits per minute: sign-in 10 per IP; recording 30, search 60 and everything
@@ -97,6 +99,7 @@ is in the repository; `.env` is gitignored and `.env.example` holds placeholders
 | `HSTS_HEADER_VALUE` | no | gateway | HSTS for pages; empty locally |
 | `PUBLIC_ORIGIN` | no | backend | The one origin CORS allows |
 | `PUBLIC_PORT` | no | gateway | Host port |
+| `MANAGER_USERNAME` | no | backend | The one username that signs in as a manager. Empty by default: nobody is a manager |
 | `DAILY_TARGET_MINUTES`, `MAX_SHIFT_HOURS` | no | backend | Business rules |
 
 The API refuses to start when a required setting is missing or a key is too short.

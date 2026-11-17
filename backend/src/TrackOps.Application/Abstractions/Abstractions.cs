@@ -116,6 +116,15 @@ public class CurrentUser
 }
 
 /// <summary>Business rules that are configuration, not code.</summary>
+/// <summary>
+/// Who signs in as a manager. Empty (the default) means nobody: every user is an employee and the
+/// manager routes answer 403 to everyone.
+/// </summary>
+public class AuthRules
+{
+	public string ManagerUsername { get; set; } = string.Empty;
+}
+
 public class WorkRules
 {
 	public int DailyTargetMinutes { get; set; } = 480;

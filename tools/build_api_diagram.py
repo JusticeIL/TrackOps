@@ -65,7 +65,7 @@ API_TREE = folder(
 		endpoint("GET", "/days/{yyyy-MM-dd}", "Day summary + that day's shifts", "Employee", "200 · 400"),
 	),
 	folder(
-		"/employees", "Manager role only · corrections leave an audit trail",
+		"/employees", "Manager only · the role is off unless MANAGER_USERNAME is set",
 		endpoint("QUERY", "/", "Autocomplete employees by name", "Manager", "200 · 403"),
 		endpoint("QUERY", "/shifts", "All shifts: filter · search · paginate", "Manager", "200 · 403"),
 		folder(
