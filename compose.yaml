@@ -27,6 +27,10 @@ x-backend-env: &backend-env
 services:
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-CU28-ubuntu-22.04
+    # Microsoft publishes this image for Intel/AMD (linux/amd64) only. Naming the platform makes
+    # Docker run it under emulation on an ARM machine (Apple Silicon) on purpose, instead of
+    # guessing. Every other image in this file is also published for ARM and runs natively there.
+    platform: linux/amd64
     restart: unless-stopped
     environment:
       ACCEPT_EULA: ${ACCEPT_EULA:?set ACCEPT_EULA=Y in .env to accept the SQL Server licence}
