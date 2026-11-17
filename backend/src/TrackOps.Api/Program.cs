@@ -69,6 +69,7 @@ public static class Program
 		services.AddScoped<ShiftRecordingService>();
 		services.AddScoped<ShiftReadService>();
 		services.AddScoped<EmployeeService>();
+		services.AddScoped<EmployeeRequestService>();
 
 		services
 			.AddControllers()

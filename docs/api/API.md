@@ -114,6 +114,17 @@ Counted in Redis, so both replicas share them. Limits are per minute and configu
 ```
 
 ```json
+// Request
+{
+  "id": 1001, "type": "Vacation",          // Vacation | Expenses | Training | Sickness | Equipment | ErrorReport | Other
+  "status": "InProgress",                  // InProgress | Approved | Rejected
+  "title": "Annual leave, 5 days", "content": "Family trip in August.",
+  "sickDays": null,                        // a number for a sickness report, otherwise null
+  "createdAtUtc": "2026-11-17T09:15:02Z"   // from the external time API
+}
+```
+
+```json
 // User
 { "id": 7, "username": "dana", "displayName": "dana", "role": "Employee" }   // Employee | Manager
 ```
@@ -169,6 +180,17 @@ the time of each is the external reading taken when the request arrives.
 Worked time for a local day is the part of each shift between that day's two local midnights,
 minus breaks in the same window. Overtime for a day is `max(0, worked − target)`. An open shift
 counts up to the current time from the time source. A day lists every shift that touches it.
+
+### Requests
+
+A user's own requests and reports. Nobody sees another user's.
+
+| Method | Path | Role | Success | Notes |
+|---|---|---|---|---|
+| GET | `/requests` | Employee | 200 `{ items: [Request] }` | The caller's requests, newest first, at most 100. |
+| POST | `/requests` | Employee | 201 Request | Body `{ type, title, content?, sickDays? }`. `title` 3–100 characters. `content` 3–2000 characters; it may be empty for `Sickness`. `sickDays` 1–30, required for `Sickness` and not allowed otherwise. The server sets `status` to `InProgress` and takes `createdAtUtc` from the external time API: 503 `time_source_unavailable` if it cannot be read, and nothing is stored. Counts against the recording rate limit. No `Idempotency-Key`. |
+
+A request stays `InProgress`: there is no approval flow yet. Request numbers (`id`) start at 1001.
 
 ### Employees (Manager only)
 

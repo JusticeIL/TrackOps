@@ -7,10 +7,10 @@ What was checked, what was found and fixed, and what proves it. "Test" names a p
 
 | Area | State | Proof |
 |---|---|---|
-| Input validation (server side) | Done | `test_sign_in_validates_input`, `test_invalid_queries_are_rejected`, `test_invalid_corrections_are_rejected`, `test_calendar_rejects_invalid_dates` |
-| SQL injection | Done | `test_sql_in_search_is_treated_as_text`, `test_like_wildcards_in_search_match_literally`, `test_sql_in_a_correction_reason_is_stored_as_text` |
+| Input validation (server side) | Done | `test_sign_in_validates_input`, `test_invalid_queries_are_rejected`, `test_invalid_corrections_are_rejected`, `test_calendar_rejects_invalid_dates`, `test_invalid_requests_are_rejected` |
+| SQL injection | Done | `test_sql_in_search_is_treated_as_text`, `test_like_wildcards_in_search_match_literally`, `test_sql_in_a_correction_reason_is_stored_as_text`, `test_script_and_sql_in_a_request_are_stored_as_plain_text` |
 | XSS | Done | `test_script_in_a_correction_reason_is_stored_and_returned_as_plain_data`, `test_script_in_a_search_term_is_not_reflected_as_html`, CSP test below |
-| CSRF | Done | Five tests named `test_*csrf*` in `test_security.py` |
+| CSRF | Done | Five tests named `test_*csrf*` in `test_security.py`, `test_filing_needs_the_csrf_token` |
 | CORS | Done | `test_foreign_origin_gets_no_cors_permission`, `test_foreign_origin_preflight_is_not_approved`, `test_own_origin_preflight_allows_the_query_method` |
 | Security headers | Done | `test_page_has_security_headers`, `test_api_has_security_headers_and_is_never_cached`, `test_https_mode_sets_secure_cookies_and_hsts` |
 | Rate limiting | Done | `test_recording_is_rate_limited_per_user`, `test_rate_limit_of_one_user_does_not_affect_another` |

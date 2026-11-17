@@ -92,6 +92,35 @@ public class PagedResult<T>
 	public int TotalPages { get; set; }
 }
 
+public class EmployeeRequestDto
+{
+	public long Id { get; set; }
+
+	public eRequestType Type { get; set; }
+
+	public eRequestStatus Status { get; set; }
+
+	public string Title { get; set; } = string.Empty;
+
+	public string Content { get; set; } = string.Empty;
+
+	public int? SickDays { get; set; }
+
+	public DateTime CreatedAtUtc { get; set; }
+}
+
+/// <summary>Body of POST /requests. The server sets the status and the filing time.</summary>
+public class NewEmployeeRequest
+{
+	public eRequestType? Type { get; set; }
+
+	public string? Title { get; set; }
+
+	public string? Content { get; set; }
+
+	public int? SickDays { get; set; }
+}
+
 public class ItemsResult<T>
 {
 	public List<T> Items { get; set; } = new List<T>();

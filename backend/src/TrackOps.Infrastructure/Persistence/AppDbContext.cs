@@ -12,6 +12,7 @@ public class AppDbContext : DbContext, IAppDbContext
 	private const int k_UniqueIndexViolation = 2601;
 	private const int k_UniqueConstraintViolation = 2627;
 	private const int k_MillisecondPrecision = 3;
+	private const long k_FirstRequestNumber = 1001;
 
 	public AppDbContext(DbContextOptions<AppDbContext> i_Options)
 		: base(i_Options)
@@ -27,6 +28,8 @@ public class AppDbContext : DbContext, IAppDbContext
 	public DbSet<ShiftAudit> ShiftAudits => Set<ShiftAudit>();
 
 	public DbSet<IdempotencyRecord> IdempotencyRecords => Set<IdempotencyRecord>();
+
+	public DbSet<EmployeeRequest> EmployeeRequests => Set<EmployeeRequest>();
 
 	public void ClearTracking()
 	{
@@ -108,6 +111,24 @@ public class AppDbContext : DbContext, IAppDbContext
 			audit.HasOne<Shift>().WithMany().HasForeignKey(entity => entity.ShiftId).OnDelete(DeleteBehavior.Cascade);
 			audit.HasOne(entity => entity.ChangedByUser).WithMany().HasForeignKey(entity => entity.ChangedByUserId).OnDelete(DeleteBehavior.Restrict);
 			audit.HasIndex(entity => entity.ShiftId).HasDatabaseName("IX_ShiftAudits_Shift");
+		});
+
+		i_Builder.Entity<EmployeeRequest>(request =>
+		{
+			// The id is the request number people see, so it starts at a four-digit number.
+			request.Property(entity => entity.Id).UseIdentityColumn(k_FirstRequestNumber, 1);
+			request.Property(entity => entity.Title).HasMaxLength(100);
+			request.Property(entity => entity.Content).HasMaxLength(2000);
+			request.HasOne(entity => entity.User).WithMany().HasForeignKey(entity => entity.UserId).OnDelete(DeleteBehavior.Restrict);
+			request.HasIndex(entity => new { entity.UserId, entity.Id }).IsDescending(false, true).HasDatabaseName("IX_EmployeeRequests_User");
+			request.ToTable(table =>
+			{
+				table.HasCheckConstraint("CK_EmployeeRequests_Type", "[Type] BETWEEN 0 AND 6");
+				table.HasCheckConstraint("CK_EmployeeRequests_Status", "[Status] IN (0, 1, 2)");
+				table.HasCheckConstraint(
+					"CK_EmployeeRequests_SickDays",
+					"([Type] = 3 AND [SickDays] BETWEEN 1 AND 30) OR ([Type] <> 3 AND [SickDays] IS NULL)");
+			});
 		});
 
 		i_Builder.Entity<IdempotencyRecord>(record =>

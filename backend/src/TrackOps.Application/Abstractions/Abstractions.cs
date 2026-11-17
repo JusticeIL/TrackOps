@@ -80,6 +80,8 @@ public interface IAppDbContext
 
 	DbSet<IdempotencyRecord> IdempotencyRecords { get; }
 
+	DbSet<EmployeeRequest> EmployeeRequests { get; }
+
 	DatabaseFacade Database { get; }
 
 	Task<int> SaveChangesAsync(CancellationToken i_CancellationToken);

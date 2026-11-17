@@ -100,6 +100,28 @@ TABLES = {
 			rule("NOTE", "rows are only ever inserted (by the application)"),
 		],
 	},
+	"EmployeeRequests": {
+		"note": "requests and reports employees file",
+		"columns": [
+			column("Id", "bigint identity", "PK"),
+			column("UserId", "int", "FK"),
+			column("Type", "int"),
+			column("Status", "int"),
+			column("Title", "nvarchar(100)"),
+			column("Content", "nvarchar(2000)"),
+			column("SickDays", "int", nullable=True),
+			column("CreatedAtUtc", INSTANT),
+		],
+		"rules": [
+			rule("INDEX", "(UserId, Id DESC)"),
+			rule("CHECK", "SickDays 1..30 exactly when Type = 3", "only a sickness report has sick days"),
+			rule("CHECK", "Type BETWEEN 0 AND 6 · Status IN (0, 1, 2)"),
+			rule("VALUES", "Type: 0 Vacation · 1 Expenses · 2 Training"),
+			rule("", "3 Sickness · 4 Equipment · 5 ErrorReport · 6 Other"),
+			rule("VALUES", "Status: 0 InProgress · 1 Approved · 2 Rejected"),
+			rule("NOTE", "Id starts at 1001; it is the request number"),
+		],
+	},
 	"IdempotencyRecords": {
 		"note": "stored answers of recording requests",
 		"columns": [
@@ -193,7 +215,7 @@ def build():
 
 	page.box("TrackOps database", TEXT + f"align=left;fontSize=30;fontStyle=1;fontColor={INK};", LEFT, 20, 340, 44)
 	page.box("SQL Server 2022", f"rounded=1;arcSize=50;html=1;fontSize=13;fontStyle=1;fillColor={TEAL};strokeColor=none;fontColor={INK};", 384, 30, 140, 26)
-	page.box("Five tables and two reporting views. Only UTC instants are stored; every duration is derived. "
+	page.box("Six tables and two reporting views. Only UTC instants are stored; every duration is derived. "
 			 "The highlighted rules are invariants the database itself enforces, for any number of API replicas.",
 			 TEXT + f"align=left;fontSize=13;fontColor={GRAY};", LEFT, 66, width, 24)
 
@@ -202,15 +224,18 @@ def build():
 	breaks = draw_table(page, "Breaks", column_x[2], TOP)
 	audits = draw_table(page, "ShiftAudits", column_x[1], lower_top)
 	draw_table(page, "IdempotencyRecords", column_x[2], lower_top)
+	requests = draw_table(page, "EmployeeRequests", column_x[0], lower_top)
 
 	relation(page, users, shifts, "ON DELETE RESTRICT", (1, column_anchor(TABLES["Users"], "Id")), (0, column_anchor(TABLES["Shifts"], "UserId")))
 	relation(page, shifts, breaks, "ON DELETE CASCADE", (1, column_anchor(TABLES["Shifts"], "Id")), (0, column_anchor(TABLES["Breaks"], "ShiftId")))
 	relation(page, shifts, audits, "ShiftId · ON DELETE CASCADE", (0.5, 1), (0.5, 0))
 	v_Optional = True
-	relation(page, users, audits, "ChangedByUserId · optional · RESTRICT", (0.5, 1),
+	# Leaves Users on its right side, so the line runs between the columns and not through EmployeeRequests below.
+	relation(page, users, audits, "ChangedByUserId · optional", (1, 0.9),
 			 (0, column_anchor(TABLES["ShiftAudits"], "ChangedByUserId")), v_Optional)
+	relation(page, users, requests, "UserId · ON DELETE RESTRICT", (0.5, 1), (0.5, 0))
 
-	bottom = lower_top + max(table_height(TABLES["ShiftAudits"]), table_height(TABLES["IdempotencyRecords"]))
+	bottom = lower_top + max(table_height(TABLES[name]) for name in ("ShiftAudits", "IdempotencyRecords", "EmployeeRequests"))
 	page.box("REPORTING VIEWS  ·  DERIVED FROM THE TABLES ABOVE, NOTHING IS STORED", TEXT + f"align=left;fontSize=12;fontStyle=1;fontColor={TEAL_DARK};", LEFT, bottom + 36, width, 24)
 	view_width = (width - 20) // 2
 	for index, (name, columns, note) in enumerate(VIEWS):

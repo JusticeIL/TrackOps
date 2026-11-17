@@ -19,6 +19,24 @@ public enum eAuditKind
 	AutoClose = 1,
 }
 
+public enum eRequestType
+{
+	Vacation = 0,
+	Expenses = 1,
+	Training = 2,
+	Sickness = 3,
+	Equipment = 4,
+	ErrorReport = 5,
+	Other = 6,
+}
+
+public enum eRequestStatus
+{
+	InProgress = 0,
+	Approved = 1,
+	Rejected = 2,
+}
+
 public class User
 {
 	public int Id { get; set; }
@@ -94,6 +112,31 @@ public class ShiftAudit
 	public DateTime NewClockInUtc { get; set; }
 
 	public DateTime? NewClockOutUtc { get; set; }
+}
+
+/// <summary>
+/// A request or report an employee files. CreatedAtUtc comes from the external time source,
+/// like every other recorded time. SickDays is set for a sickness report only.
+/// </summary>
+public class EmployeeRequest
+{
+	public long Id { get; set; }
+
+	public int UserId { get; set; }
+
+	public User? User { get; set; }
+
+	public eRequestType Type { get; set; }
+
+	public eRequestStatus Status { get; set; }
+
+	public string Title { get; set; } = string.Empty;
+
+	public string Content { get; set; } = string.Empty;
+
+	public int? SickDays { get; set; }
+
+	public DateTime CreatedAtUtc { get; set; }
 }
 
 /// <summary>Stored response of a recording request, written in the same transaction as the recording.</summary>

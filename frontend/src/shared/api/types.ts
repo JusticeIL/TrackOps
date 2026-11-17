@@ -96,6 +96,19 @@ export interface AuditItem {
   newClockOutUtc: string | null
 }
 
+export type RequestType = 'Vacation' | 'Expenses' | 'Training' | 'Sickness' | 'Equipment' | 'ErrorReport' | 'Other'
+export type RequestStatus = 'InProgress' | 'Approved' | 'Rejected'
+
+export interface EmployeeRequest {
+  id: number
+  type: RequestType
+  status: RequestStatus
+  title: string
+  content: string
+  sickDays: number | null
+  createdAtUtc: string
+}
+
 export interface ShiftQuery {
   userId?: number
   from?: string

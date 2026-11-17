@@ -311,6 +311,22 @@ textarea {
   color: var(--warning-ink);
 }
 
+/* Request statuses: green approved, amber in progress, red rejected. */
+.badge-approved {
+  background: var(--approved-fill);
+  color: var(--approved-ink);
+}
+
+.badge-progress {
+  background: var(--progress-fill);
+  color: var(--progress-ink);
+}
+
+.badge-rejected {
+  background: var(--rejected-fill);
+  color: var(--rejected-ink);
+}
+
 .badge-overtime {
   background: var(--ink);
   color: var(--accent);
@@ -362,6 +378,13 @@ textarea {
   color: var(--muted);
 }
 
+/* A long request title wraps instead of stretching the table. */
+.table td.request-title {
+  white-space: normal;
+  max-inline-size: 360px;
+  overflow-wrap: anywhere;
+}
+
 /* Latin cells are left-to-right inside, but still line up with their right-aligned Hebrew headers. */
 .table td.latin {
   text-align: end;
@@ -399,22 +422,6 @@ input[type='checkbox'] {
   margin: 0;
   min-block-size: 44px;
   align-items: center;
-}
-
-/* Pictures of planned screens. The frame (radius and shadow) matches the app's own cards. */
-.preview-image {
-  display: block;
-  max-inline-size: 100%;
-  block-size: auto;
-  border-radius: 14px;
-  box-shadow: var(--shadow);
-}
-
-/* A picture with a white background that is not a card: multiply lets the page colour show through. */
-.preview-image-plain {
-  border-radius: 0;
-  box-shadow: none;
-  mix-blend-mode: multiply;
 }
 
 .skeleton {
