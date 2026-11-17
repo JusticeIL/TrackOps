@@ -88,6 +88,12 @@ export function addMonths(month: string, delta: number): string {
   return `${shifted.getUTCFullYear()}-${String(shifted.getUTCMonth() + 1).padStart(2, '0')}`
 }
 
+/** Adds whole days to a yyyy-MM-dd date. Plain calendar arithmetic; no clock is read. */
+export function addDays(date: string, delta: number): string {
+  const [year, month, day] = date.split('-').map(Number)
+  return new Date(Date.UTC(year, month - 1, day + delta)).toISOString().slice(0, 10)
+}
+
 const monthTitleFormat = new Intl.DateTimeFormat(LOCALE, { timeZone: 'UTC', month: 'long', year: 'numeric' })
 const dayTitleFormat = new Intl.DateTimeFormat(LOCALE, { timeZone: 'UTC', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 

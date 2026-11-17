@@ -12,8 +12,8 @@ const DashboardPage = lazy(() => import('../features/dashboard/DashboardPage'))
 const HistoryPage = lazy(() => import('../features/history/HistoryPage'))
 const CalendarPage = lazy(() => import('../features/calendar/CalendarPage'))
 const EmployeesPage = lazy(() => import('../features/employees/EmployeesPage'))
-const FormsDataPage = lazy(() => import('../features/previews/FormsDataPage'))
-const RequestsPage = lazy(() => import('../features/previews/RequestsPage'))
+const FormsDataPage = lazy(() => import('../features/formsData/FormsDataPage'))
+const RequestsPage = lazy(() => import('../features/requests/RequestsPage'))
 
 const queryClient: QueryClient = new QueryClient({
   defaultOptions: {
