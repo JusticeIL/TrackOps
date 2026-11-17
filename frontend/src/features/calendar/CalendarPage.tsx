@@ -5,7 +5,7 @@ import eventsPreview from '../../assets/previews/calendar-events.png'
 import { api, describeError } from '../../shared/api/client'
 import type { CalendarDay, CalendarMonth, DaySummary } from '../../shared/api/types'
 import { addMonths, formatDayTitle, formatHoursText, formatMinutes, formatMonthTitle, weekdayOf } from '../../shared/time/zurich'
-import { Notice, PreviewImage, PreviewNote, SkeletonRows } from '../../shared/ui/components'
+import { Notice, PreviewImage, SkeletonRows } from '../../shared/ui/components'
 import { ShiftTable } from '../../shared/ui/ShiftTable'
 import './calendar.css'
 
@@ -89,15 +89,12 @@ function DayShifts({ date }: { date: string }) {
 /** Events have no data behind them yet, so the tab shows a picture of the planned list. */
 function DayEvents() {
   return (
-    <div className="stack">
-      <PreviewNote />
-      <PreviewImage
-        src={eventsPreview}
-        alt="אירועים לדוגמה: בשעה 10:00 צוות פיתוח – ישיבה שבועית, סקירת התקדמות פרויקטים; בשעה 14:00 הכשרת בטיחות, הכשרה חובה לכל העובדים"
-        width={1318}
-        height={311}
-      />
-    </div>
+    <PreviewImage
+      src={eventsPreview}
+      alt="אירועים לדוגמה: בשעה 10:00 צוות פיתוח – ישיבה שבועית, סקירת התקדמות פרויקטים; בשעה 14:00 הכשרת בטיחות, הכשרה חובה לכל העובדים"
+      width={1318}
+      height={311}
+    />
   )
 }
 

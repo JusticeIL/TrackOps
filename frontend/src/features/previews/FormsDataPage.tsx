@@ -5,7 +5,7 @@ import sickDays from '../../assets/previews/data-sick-days.png'
 import vacationDays from '../../assets/previews/data-vacation-days.png'
 import weekChart from '../../assets/previews/data-week-chart.png'
 import weeklyAverage from '../../assets/previews/data-weekly-average.png'
-import { PreviewImage, PreviewNote } from '../../shared/ui/components'
+import { PreviewImage } from '../../shared/ui/components'
 import './previews.css'
 
 export default function FormsDataPage() {
@@ -14,7 +14,6 @@ export default function FormsDataPage() {
       <div className="page-header">
         <h1>טפסים ונתונים</h1>
       </div>
-      <PreviewNote />
       <div className="preview-columns">
         <section className="preview-group" aria-label="שעות עבודה">
           <PreviewImage src={monthHours} alt="סה״כ שעות החודש: 157.5, עלייה של 12.5% מהחודש הקודם" width={280} height={170} />

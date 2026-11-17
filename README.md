@@ -93,8 +93,8 @@ setting and restart to switch it off again; the user's role follows at the next 
 ### Preview screens
 
 Two screens in the menu, "Forms and data" and "Requests and reports", and the Events tab under
-the calendar are pictures of planned screens. They have no data behind them and say so on the
-page. Each picture has a text alternative for screen readers.
+the calendar are pictures of planned screens. They have no data behind them. Each picture has
+a text alternative for screen readers.
 
 ### Demo data (optional)
 

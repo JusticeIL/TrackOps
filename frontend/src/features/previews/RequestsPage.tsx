@@ -1,7 +1,7 @@
 // "Requests and reports" is shown as pictures of the planned screen. There is no data behind it yet.
 import actions from '../../assets/previews/requests-actions.png'
 import table from '../../assets/previews/requests-table.png'
-import { PreviewImage, PreviewNote } from '../../shared/ui/components'
+import { PreviewImage } from '../../shared/ui/components'
 import './previews.css'
 
 export default function RequestsPage() {
@@ -11,7 +11,6 @@ export default function RequestsPage() {
         <h1>בקשות ודיווחים</h1>
         <PreviewImage plain src={actions} alt="כפתורים שאינם פעילים: בקשה חדשה, דיווח מחלה" width={343} height={40} />
       </div>
-      <PreviewNote />
       <PreviewImage
         src={table}
         alt={

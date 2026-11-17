@@ -71,10 +71,6 @@ export function PreviewImage({ src, alt, width, height, plain = false }: Preview
   )
 }
 
-export function PreviewNote() {
-  return <p className="muted preview-note">תצוגה לדוגמה בלבד: המסך מוצג כתמונה, והנתונים שבה אינם אמיתיים.</p>
-}
-
 interface PaginationProps {
   page: number
   totalPages: number
