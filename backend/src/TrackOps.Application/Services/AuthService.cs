@@ -14,23 +14,25 @@ public class SignInOutcome
 }
 
 /// <summary>
-/// Mock sign-in: any valid-looking username and password pass, and the username decides the role.
+/// Mock sign-in: any valid-looking username and password pass. Everyone is an employee, unless a
+/// manager username is configured (AuthRules); it is not configured by default.
 /// No password is stored or compared, so there is nothing to hash. Everything around it is real:
 /// input validation, a server-side session that is rotated on sign-in and revoked on sign-out.
 /// </summary>
 public class AuthService
 {
-	public const string k_ManagerUsername = "admin";
 	private const int k_MinPasswordLength = 8;
 	private const int k_MaxPasswordLength = 128;
 	private static readonly Regex sr_UsernamePattern = new Regex("^[a-zA-Z0-9._-]{3,32}$", RegexOptions.Compiled);
 	private readonly IAppDbContext r_Db;
 	private readonly ISessionStore r_Sessions;
+	private readonly AuthRules r_AuthRules;
 
-	public AuthService(IAppDbContext i_Db, ISessionStore i_Sessions)
+	public AuthService(IAppDbContext i_Db, ISessionStore i_Sessions, AuthRules i_AuthRules)
 	{
 		r_Db = i_Db;
 		r_Sessions = i_Sessions;
+		r_AuthRules = i_AuthRules;
 	}
 
 	public async Task<SignInOutcome> SignInAsync(SignInRequest i_Request, string? i_PreviousSessionId, CancellationToken i_CancellationToken)
@@ -69,6 +71,7 @@ public class AuthService
 	private async Task<User> findOrCreateUserAsync(string i_DisplayName, CancellationToken i_CancellationToken)
 	{
 		string username = i_DisplayName.ToLowerInvariant();
+		eUserRole role = roleOf(username);
 		User? user = await r_Db.Users.FirstOrDefaultAsync(candidate => candidate.Username == username, i_CancellationToken);
 
 		if (user == null)
@@ -77,7 +80,7 @@ public class AuthService
 			{
 				Username = username,
 				DisplayName = i_DisplayName,
-				Role = username == k_ManagerUsername ? eUserRole.Manager : eUserRole.Employee,
+				Role = role,
 			};
 			r_Db.Users.Add(user);
 			try
@@ -91,7 +94,21 @@ public class AuthService
 				user = await r_Db.Users.FirstAsync(candidate => candidate.Username == username, i_CancellationToken);
 			}
 		}
+		else if (user.Role != role)
+		{
+			// The manager setting changed since this user last signed in; the stored role follows it.
+			user.Role = role;
+			await r_Db.SaveChangesAsync(i_CancellationToken);
+		}
 
 		return user;
+	}
+
+	private eUserRole roleOf(string i_Username)
+	{
+		string managerUsername = r_AuthRules.ManagerUsername.Trim();
+		bool isManager = managerUsername.Length > 0 && string.Equals(i_Username, managerUsername, StringComparison.OrdinalIgnoreCase);
+
+		return isManager ? eUserRole.Manager : eUserRole.Employee;
 	}
 }

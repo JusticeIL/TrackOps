@@ -158,8 +158,8 @@ limits, and time-of-day premiums.
 
 ## 6. Authentication (mock, on purpose)
 
-Any valid-looking credentials sign in; `admin` is the manager. **No password is stored or
-compared, so there is nothing to hash.** Everything around it is real:
+Any valid-looking credentials sign in, as an employee. **No password is stored or compared, so
+there is nothing to hash.** Everything around it is real:
 
 - The JWT (24 h) and an opaque session id travel in `HttpOnly`, `SameSite=Strict` cookies.
 - A request is accepted only if the JWT is valid, its `sid` claim equals the session cookie, and
@@ -170,6 +170,15 @@ compared, so there is nothing to hash.** Everything around it is real:
 
 Two roles only: Employee and Manager. Manager routes are locked at controller level.
 
+**The manager role is switched off by default.** The task is a clock for workers, so a fresh
+installation has no manager: `MANAGER_USERNAME` is empty, every sign-in is an employee and the
+manager routes answer 403 to everyone. Naming a username in that setting switches the role on for
+that user. The code was kept instead of deleted because it is finished and tested, and because
+it is the only way to fix a shift the system closed automatically. The test stack sets
+`admin`, so the manager routes stay covered; one extra test checks the default. A user's stored
+role follows the setting at their next sign-in; a session issued before the change keeps its
+role until it ends (24 hours at most).
+
 ## 7. Frontend
 
 - **Hebrew only, right-to-left.** `dir="rtl"` and CSS logical properties throughout. English was
@@ -177,7 +186,7 @@ Two roles only: Employee and Manager. Manager routes are locked at controller le
 - **Palette:** near-black, near-white and one teal accent. Teal on white is about 2:1, which fails
   WCAG for text, so teal is used for fills and on dark surfaces, with near-black text on it; a
   darker teal is used for text on light surfaces. Every pairing and its ratio is listed in
-  `frontend/src/shared/styles/tokens.css`. Lighthouse accessibility: 100 on all five screens.
+  `frontend/src/shared/styles/tokens.css`. Lighthouse accessibility: 100 on every screen.
   Teal marks what matters now: the primary button, the selected day, today, the menu icons and
   the active menu entry. A primary button loses its fill on hover and keeps a teal outline.
   Disabled controls are mid grey (`#808080`).
@@ -189,17 +198,29 @@ Two roles only: Employee and Manager. Manager routes are locked at controller le
 - TanStack Query provides request de-duplication, caching, optimistic updates with rollback and
   parallel requests. React Router provides one lazily loaded chunk per screen.
 
+### Preview screens
+
+"Forms and data", "Requests and reports" and the Events tab under the calendar are shown as
+pictures of the planned screens. Nothing in the task needs them, and building them for real
+(leave balances, a request workflow, an events calendar) would each be a feature with its own
+data and rules. A picture shows where the product is going without pretending the data exists:
+every such screen states that it is a sample, and each picture carries a text alternative. Two
+parts of the "Forms and data" design were left out even as pictures: the salary and payslip
+cards and the form downloads.
+
+The Calendar screen is titled "Shifts and events". Below the month, two tabs show the selected
+day: Shifts (the real shifts of that day) and Events (a picture).
+
 ### Screens considered and left out
 
 | Dropped | Reason |
 |---|---|
-| Forms, New form | A document workflow unrelated to clocking shifts |
-| Report sickness | Absence management is a separate product area |
+| New request form, Report sickness form | A request workflow unrelated to clocking shifts; the list screen is a picture only |
 | Support (three frames) | Static help content adds no engineering depth |
 | Profile | With mock sign-in there is nothing to edit; sign-out moved to the header menu |
 | Company-rules card | Static content |
 | Language switcher | Hebrew only (see above) |
-| Salary, payslips, vacation and sick-day tiles | Payroll is out of scope; the statistics screen became Shift History |
+| Salary and payslip cards, form downloads | Payroll and exports are out of scope |
 | Add / edit / delete shift on the Calendar | Employees cannot invent shifts; a manager corrects existing ones with an audit trail |
 | Phone, e-mail and photo columns on Employees | No such data is collected; the screen shows shifts instead |
 
@@ -287,6 +308,7 @@ None of them has a sidebar entry, so there are no dead links.
   is not published outside the Docker network.
 - Rate limiting uses fixed one-minute windows, so a burst across a window boundary can reach
   twice the limit.
-- Mock sign-in: anyone can sign in as anyone, including `admin`.
+- Mock sign-in: anyone can sign in as anyone. If a manager username is configured, that includes
+  the manager.
 - Keyboard operation was built in (native buttons, a native dialog, a combobox pattern, visible
   focus, a skip link) and spot-checked, not exhaustively tested with a screen reader.

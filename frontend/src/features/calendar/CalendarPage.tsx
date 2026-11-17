@@ -1,9 +1,11 @@
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
+import type { KeyboardEvent } from 'react'
+import eventsPreview from '../../assets/previews/calendar-events.png'
 import { api, describeError } from '../../shared/api/client'
 import type { CalendarDay, CalendarMonth, DaySummary } from '../../shared/api/types'
 import { addMonths, formatDayTitle, formatHoursText, formatMinutes, formatMonthTitle, weekdayOf } from '../../shared/time/zurich'
-import { Notice, SkeletonRows } from '../../shared/ui/components'
+import { Notice, PreviewImage, PreviewNote, SkeletonRows } from '../../shared/ui/components'
 import { ShiftTable } from '../../shared/ui/ShiftTable'
 import './calendar.css'
 
@@ -59,29 +61,93 @@ function DayShifts({ date }: { date: string }) {
     queryFn: () => api<CalendarDay>('GET', `/calendar/days/${date}`),
   })
 
+  if (day.isError) {
+    return <Notice kind="error">{describeError(day.error)}</Notice>
+  }
+  if (day.isPending) {
+    return <SkeletonRows rows={3} />
+  }
+
   return (
-    <section className="card" aria-labelledby="day-title">
-      <h2 id="day-title">{formatDayTitle(date)}</h2>
-      {day.isError ? (
-        <Notice kind="error">{describeError(day.error)}</Notice>
-      ) : day.isPending ? (
-        <SkeletonRows rows={3} />
-      ) : (
-        <div className="stack">
-          <p className="row">
-            <span>
-              עבודה: <strong className="latin">{formatMinutes(day.data.workedMinutes)}</strong>
-            </span>
-            <span>
-              הפסקות: <strong className="latin">{formatMinutes(day.data.breakMinutes)}</strong>
-            </span>
-            <span>
-              שעות נוספות: <strong className="latin">{formatMinutes(day.data.overtimeMinutes)}</strong>
-            </span>
-          </p>
-          <ShiftTable shifts={day.data.shifts} caption={`משמרות ביום ${formatDayTitle(date)}`} />
+    <div className="stack">
+      <p className="row">
+        <span>
+          עבודה: <strong className="latin">{formatMinutes(day.data.workedMinutes)}</strong>
+        </span>
+        <span>
+          הפסקות: <strong className="latin">{formatMinutes(day.data.breakMinutes)}</strong>
+        </span>
+        <span>
+          שעות נוספות: <strong className="latin">{formatMinutes(day.data.overtimeMinutes)}</strong>
+        </span>
+      </p>
+      <ShiftTable shifts={day.data.shifts} caption={`משמרות ביום ${formatDayTitle(date)}`} />
+    </div>
+  )
+}
+
+/** Events have no data behind them yet, so the tab shows a picture of the planned list. */
+function DayEvents() {
+  return (
+    <div className="stack">
+      <PreviewNote />
+      <PreviewImage
+        src={eventsPreview}
+        alt="אירועים לדוגמה: בשעה 10:00 צוות פיתוח – ישיבה שבועית, סקירת התקדמות פרויקטים; בשעה 14:00 הכשרת בטיחות, הכשרה חובה לכל העובדים"
+        width={1318}
+        height={311}
+      />
+    </div>
+  )
+}
+
+type DayTab = 'shifts' | 'events'
+
+const DAY_TABS: { id: DayTab; label: string }[] = [
+  { id: 'shifts', label: 'משמרות' },
+  { id: 'events', label: 'אירועים' },
+]
+
+/** The selected day, below the calendar: a Shifts tab with the real shifts and an Events tab. */
+function DayPanel({ date }: { date: string }) {
+  const [tab, setTab] = useState<DayTab>('shifts')
+
+  // Arrow keys move between the two tabs, as keyboard users expect from a tab list.
+  function handleKey(event: KeyboardEvent<HTMLDivElement>) {
+    if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+      const next: DayTab = tab === 'shifts' ? 'events' : 'shifts'
+      setTab(next)
+      document.getElementById(`day-tab-${next}`)?.focus()
+    }
+  }
+
+  return (
+    <section aria-labelledby="day-title">
+      <div className="day-tabs-row">
+        <div className="day-tabs" role="tablist" aria-label="מה להציג ליום שנבחר" onKeyDown={handleKey}>
+          {DAY_TABS.map((item) => (
+            <button
+              key={item.id}
+              id={`day-tab-${item.id}`}
+              type="button"
+              role="tab"
+              className="day-tab"
+              aria-selected={tab === item.id}
+              aria-controls="day-panel"
+              tabIndex={tab === item.id ? 0 : -1}
+              onClick={() => setTab(item.id)}
+            >
+              {item.label}
+            </button>
+          ))}
         </div>
-      )}
+        <h2 id="day-title" className="day-title">
+          {formatDayTitle(date)}
+        </h2>
+      </div>
+      <div id="day-panel" role="tabpanel" aria-labelledby={`day-tab-${tab}`} className={tab === 'shifts' ? 'card' : undefined}>
+        {tab === 'shifts' ? <DayShifts date={date} /> : <DayEvents />}
+      </div>
     </section>
   )
 }
@@ -112,7 +178,7 @@ export default function CalendarPage() {
   return (
     <>
       <div className="page-header">
-        <h1>לוח שנה</h1>
+        <h1>משמרות ואירועים</h1>
       </div>
       <div className="stack">
         <section className="card" aria-labelledby="month-title">
@@ -144,7 +210,7 @@ export default function CalendarPage() {
             </>
           )}
         </section>
-        {selectedDate ? <DayShifts date={selectedDate} /> : <p className="muted">בחרו יום כדי לראות את המשמרות שלו.</p>}
+        {selectedDate ? <DayPanel date={selectedDate} /> : <p className="muted">בחרו יום כדי לראות את המשמרות והאירועים שלו.</p>}
       </div>
     </>
   )

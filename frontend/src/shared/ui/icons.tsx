@@ -49,6 +49,23 @@ export function CalendarIcon() {
   )
 }
 
+export function ChartIcon() {
+  return (
+    <Icon>
+      <path d="M3 21h18M7 21V11M12 21V5M17 21v-7" />
+    </Icon>
+  )
+}
+
+export function DocumentIcon() {
+  return (
+    <Icon>
+      <path d="M6 3h8l4 4v14H6z" />
+      <path d="M14 3v4h4M9 13h6M9 17h6" />
+    </Icon>
+  )
+}
+
 export function UsersIcon() {
   return (
     <Icon>

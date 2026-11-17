@@ -1,6 +1,6 @@
-"""Runs the Lighthouse accessibility audit on all five screens of the running app.
+"""Runs the Lighthouse accessibility audit on every screen of the running app.
 
-Usage (stack running, Chrome or Edge installed, Node available):
+Usage (test stack running, because it has a manager; Chrome or Edge installed, Node available):
 
     python tools/lighthouse_a11y.py
 
@@ -22,7 +22,8 @@ import requests
 ROOT = Path(__file__).resolve().parent.parent
 BASE_URL = os.environ.get("TRACKOPS_URL", "http://localhost:8080")
 PAGES = [("Sign in", "/sign-in", None), ("Dashboard", "/", "employee"), ("History", "/history", "employee"),
-		 ("Calendar", "/calendar", "employee"), ("Employees", "/employees", "manager")]
+		 ("Calendar", "/calendar", "employee"), ("Forms and data", "/forms-data", "employee"),
+		 ("Requests", "/requests", "employee"), ("Employees", "/employees", "manager")]
 BROWSERS = [r"C:\Program Files\Google\Chrome\Application\chrome.exe", r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
 			r"C:\Program Files\Microsoft\Edge\Application\msedge.exe", "/usr/bin/google-chrome", "/usr/bin/chromium"]
 

@@ -125,7 +125,7 @@ Counted in Redis, so both replicas share them. Limits are per minute and configu
 | Method | Path | Role | Success | Notes |
 |---|---|---|---|---|
 | GET | `/auth/csrf` | Public | 200 `{ token }` | |
-| POST | `/auth/session` | Public | 200 User | Body `{ username, password }`. Mock sign-in: any valid-looking pair passes; `admin` is a Manager. 400 on invalid input. |
+| POST | `/auth/session` | Public | 200 User | Body `{ username, password }`. Mock sign-in: any valid-looking pair passes. The role is Employee, or Manager for the one username in the server's `MANAGER_USERNAME` setting (empty by default). 400 on invalid input. |
 | GET | `/auth/session` | Employee | 200 User | 401 when not signed in. |
 | DELETE | `/auth/session` | Employee | 204 | Revokes the session and clears the cookies. |
 
@@ -179,7 +179,8 @@ counts up to the current time from the time source. A day lists every shift that
 | PATCH | `/employees/{userId}/shifts/{shiftId}` | 200 Shift | Body `{ clockInUtc?, clockOutUtc?, reason, rowVersion }`. `reason` 3–300 characters. 409 `stale_version` or `shift_overlap`. Writes an audit row. |
 | GET | `/employees/{userId}/shifts/{shiftId}/audit` | 200 `{ items: [{ id, kind, changedBy: User, changedAtUtc, reason, oldClockInUtc, oldClockOutUtc, newClockInUtc, newClockOutUtc }] }` | `kind`: `ManagerCorrection`, `AutoClose`. |
 
-Everyone else gets 403 on these routes.
+Everyone else gets 403 on these routes. With no manager configured, which is the default, that
+is every caller.
 
 ### Internal
 

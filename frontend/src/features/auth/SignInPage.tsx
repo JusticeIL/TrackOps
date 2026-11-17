@@ -45,7 +45,7 @@ export default function SignInPage() {
             required
           />
           <span id="username-hint" className="muted">
-            3–32 תווים באנגלית, ספרות, נקודה, מקף או קו תחתון. המשתמש <span className="latin">admin</span> הוא מנהל.
+            3–32 תווים באנגלית, ספרות, נקודה, מקף או קו תחתון.
           </span>
           {fieldErrors.username && <span className="field-error">שם המשתמש אינו תקין.</span>}
         </div>

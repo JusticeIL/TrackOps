@@ -1,7 +1,7 @@
 # TrackOps — shift clock (שעון נוכחות)
 
-Employees clock in and out of shifts, take breaks, and see their hours and overtime. Managers see
-everyone's shifts and can correct them, with an audit trail.
+Employees clock in and out of shifts, take breaks, and see their hours and overtime. A manager
+role (everyone's shifts, corrections with an audit trail) is built in and switched off by default.
 
 **The one hard rule:** every recorded timestamp comes from an external time API for
 Europe/Zurich. The browser clock and the server clock are never used for recording. If the time
@@ -71,7 +71,30 @@ The first run downloads the images (SQL Server is about 1.5 GB) and takes a few 
 **3. Open <http://localhost:8080>.**
 
 Sign-in is a mock: any username (3–32 letters, digits, `.`, `_`, `-`) and any password of 8+
-characters work. The username `admin` is the manager; every other name is an employee.
+characters work. Everyone signs in as an employee.
+
+### Manager access (off by default)
+
+The task is a shift clock, so out of the box there is no manager. To switch the manager role on,
+name one username in `.env` and restart:
+
+```bash
+MANAGER_USERNAME=admin
+```
+
+```bash
+docker compose up -d
+```
+
+Whoever signs in with that username gets one more screen, Employees: every employee's shifts,
+and corrections of clock-in and clock-out times with a reason and an audit trail. Clear the
+setting and restart to switch it off again; the user's role follows at the next sign-in.
+
+### Preview screens
+
+Two screens in the menu, "Forms and data" and "Requests and reports", and the Events tab under
+the calendar are pictures of planned screens. They have no data behind them and say so on the
+page. Each picture has a text alternative for screen readers.
 
 ### Demo data (optional)
 
@@ -209,6 +232,15 @@ One test needs the stack in HTTPS mode and is skipped otherwise:
 ```bash
 REQUIRE_HTTPS=true HSTS_HEADER_VALUE="max-age=31536000; includeSubDomains" docker compose -f compose.yaml -f infra/compose.test.yaml up -d
 EXPECT_HTTPS=1 tests/.venv/Scripts/python -m pytest tests/test_security.py -k https
+docker compose -f compose.yaml -f infra/compose.test.yaml up -d
+```
+
+One test checks the default, where nobody is a manager. The test stack has a manager (the other
+tests need one), so this test is skipped unless the stack is started without one:
+
+```bash
+TEST_MANAGER_USERNAME= docker compose -f compose.yaml -f infra/compose.test.yaml up -d
+EXPECT_NO_MANAGER=1 tests/.venv/Scripts/python -m pytest tests/test_auth.py -k without_a_configured_manager
 docker compose -f compose.yaml -f infra/compose.test.yaml up -d
 ```
 

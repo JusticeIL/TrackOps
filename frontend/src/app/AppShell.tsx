@@ -2,12 +2,14 @@ import { Suspense, useEffect, useRef, useState } from 'react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
 import { useSession, useSignOut } from '../features/auth/session'
 import { Logo, SkeletonRows } from '../shared/ui/components'
-import { CalendarIcon, HistoryIcon, HomeIcon, SignOutIcon, UsersIcon } from '../shared/ui/icons'
+import { CalendarIcon, ChartIcon, DocumentIcon, HistoryIcon, HomeIcon, SignOutIcon, UsersIcon } from '../shared/ui/icons'
 
 const NAV_ITEMS = [
   { to: '/', label: 'מסך הבית', icon: HomeIcon, managerOnly: false },
   { to: '/history', label: 'היסטוריית משמרות', icon: HistoryIcon, managerOnly: false },
-  { to: '/calendar', label: 'לוח שנה', icon: CalendarIcon, managerOnly: false },
+  { to: '/calendar', label: 'משמרות ואירועים', icon: CalendarIcon, managerOnly: false },
+  { to: '/forms-data', label: 'טפסים ונתונים', icon: ChartIcon, managerOnly: false },
+  { to: '/requests', label: 'בקשות ודיווחים', icon: DocumentIcon, managerOnly: false },
   { to: '/employees', label: 'עובדים', icon: UsersIcon, managerOnly: true },
 ]
 

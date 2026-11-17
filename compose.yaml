@@ -21,6 +21,8 @@ x-backend-env: &backend-env
   Security__CsrfKey: ${CSRF_KEY:?set CSRF_KEY in .env}
   Security__RequireHttps: ${REQUIRE_HTTPS:-true}
   Security__AllowedOrigin: ${PUBLIC_ORIGIN:-http://localhost:8080}
+  # Empty means no manager: everyone signs in as an employee.
+  Auth__ManagerUsername: ${MANAGER_USERNAME:-}
   WorkRules__DailyTargetMinutes: ${DAILY_TARGET_MINUTES:-480}
   WorkRules__MaxShiftHours: ${MAX_SHIFT_HOURS:-16}
 

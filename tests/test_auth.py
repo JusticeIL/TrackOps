@@ -1,4 +1,6 @@
 """Sign-in, session cookies, rotation and revocation."""
+import os
+
 import pytest
 import requests
 
@@ -21,6 +23,16 @@ def test_sign_in_sets_http_only_same_site_cookies(stub):
 			assert "path=/api" in header.lower()
 
 
+@pytest.mark.skipif(os.environ.get("EXPECT_NO_MANAGER") != "1", reason="run against a stack started with TEST_MANAGER_USERNAME= (see README)")
+def test_without_a_configured_manager_everyone_is_an_employee(stub):
+	admin = Client("admin")
+
+	assert admin.user["role"] == "Employee"
+	assert admin.get("/auth/session").json()["role"] == "Employee"
+	assert admin.query("/employees/shifts").status_code == 403
+
+
+@pytest.mark.skipif(os.environ.get("EXPECT_NO_MANAGER") == "1", reason="this stack has no manager")
 def test_admin_username_is_manager_and_others_are_employees(stub):
 	assert Client("admin").user["role"] == "Manager"
 	assert Client().user["role"] == "Employee"
