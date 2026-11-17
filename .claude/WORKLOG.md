@@ -45,7 +45,7 @@ code is in `plans/01-api-contract-and-execution-plan.md`.
 | An optional free-text note on clock-out, which it had added without asking and without listing it as a decision | Removed everywhere | I asked what it was for. It answered plainly: it gave the history search something to search and the security tests a free-text field. Nothing in the task asks for it, so the column, the field, the search box and the tests' use of it went |
 | An overtime card on the home screen | Removed; overtime stays on the Calendar | The home screen is for clocking in and out |
 | A manager who signs in with the username `admin` | Off by default, behind one setting | The task is a clock for workers. It asked whether to delete the manager code or switch it off; I chose the switch, since the code is tested and is the only way to fix a shift the system closed by itself |
-| Two screens left out of the build (forms and data, requests and reports) | Shown as pictures of the planned screens | I wanted the menu to show where the product is going without building features the task does not ask for |
+| Two screens left out of the build (forms and data, requests and reports) | First shown as pictures of the planned screens, then built for real: hours from my actual shifts, forms that file a stored request, sample data only where the system has none | I wanted the menu to show where the product is going without building features the task does not ask for |
 
 ## Where Claude Code corrected me
 

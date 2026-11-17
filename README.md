@@ -90,11 +90,15 @@ Whoever signs in with that username gets one more screen, Employees: every emplo
 and corrections of clock-in and clock-out times with a reason and an audit trail. Clear the
 setting and restart to switch it off again; the user's role follows at the next sign-in.
 
-### Preview screens
+### What is real and what is a sample
 
-Two screens in the menu, "Forms and data" and "Requests and reports", and the Events tab under
-the calendar are pictures of planned screens. They have no data behind them. Each picture has
-a text alternative for screen readers.
+- **Forms and data**: the hours this month, the weekly average and the chart of this week come
+  from the user's real shifts. The vacation and sick-day cards show fixed sample numbers.
+- **Requests and reports**: the two buttons open forms that file a real request
+  (`POST /requests`). It is stored, gets a number from 1001 up and appears at the top of the table.
+  The five rows numbered 0001–0005 are a sample history, so the screen is not empty on a new
+  installation.
+- **Events tab** under the calendar: a sample list, the same for every day.
 
 ### Demo data (optional)
 
@@ -221,9 +225,10 @@ tests/.venv/Scripts/python -m pip install -r tests/requirements.txt   # Linux/ma
 tests/.venv/Scripts/python -m pytest
 ```
 
-About 150 tests, roughly four minutes. They cover clock in/out through the stub; fail-closed
+About 165 tests, roughly four minutes. They cover clock in/out through the stub; fail-closed
 behaviour when the time source is down, slow or wrong; DST days (23 h and 25 h) and overtime;
 20 concurrent clock-ins across both replicas; idempotent retries; `QUERY` search and pagination;
+filing requests and sickness reports;
 401/403 on manager routes; CSRF; rate limiting; security headers; CORS; XSS and SQL injection
 payloads; and a static check that no code outside the two time modules reads the system clock.
 
