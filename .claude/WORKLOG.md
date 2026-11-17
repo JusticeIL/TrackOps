@@ -40,6 +40,7 @@ code is in `plans/01-api-contract-and-execution-plan.md`.
 | Self-signed TLS on localhost so `Secure` cookies and HSTS are real | Plain HTTP locally, with the reason stated in the README | Browsers reject self-signed certificates; production would use a real one |
 | Logo "ring and check" (its recommendation) | Logo "Tick T" | My preference |
 | 22 endpoints | 19 after removing the fallbacks | Follows from the first row |
+| It had checked the processor of my machine only | I asked what happens on the reviewer's machine, which may be a Mac | It then checked every base image: all support ARM except SQL Server, which it pinned and documented, with the untested Apple Silicon path stated as a limit |
 | Stay on .NET 10 LTS and word the docs accurately (its recommendation) | Move to .NET 11 | I wanted the runtime choice to be about `QUERY` for real. It showed me what .NET 11 actually adds (`HttpMethods.Query`, `HttpMethods.IsQuery`, and no attribute), then did the move and reran everything |
 
 ## Where Claude Code corrected me
@@ -49,6 +50,10 @@ code is in `plans/01-api-contract-and-execution-plan.md`.
   verb, which works on older versions too, and first-class support starts in .NET 11. When I
   repeated the claim it did not argue from memory: it ran the same mapping on the .NET 9 SDK and
   showed me the response. That is what led to the move to .NET 11 instead of a wrong sentence.
+- I proposed dropping containers altogether and letting the reviewer's own .NET and npm adapt to
+  his system. It disagreed with reasons I could check: SQL Server cannot be installed on macOS and
+  Redis has no native Windows build, so that would run on fewer machines, not more. It also showed
+  that replication does not depend on the containers by starting a third replica and testing it.
 - It had written "as the team lead requested" about `QUERY` on my word. When I said the choice was
   mine, it removed the attribution rather than leave a claim nobody could back.
 
