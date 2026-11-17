@@ -45,7 +45,7 @@ API_TREE = folder(
 	folder(
 		"/shifts", "own shifts only · one open shift per user (DB-enforced)",
 		endpoint("POST", "/", "Clock in ★", "Employee", "201 · 409 · 503"),
-		endpoint("QUERY", "/", "History: filter · search · paginate", "Employee", "200 · 400"),
+		endpoint("QUERY", "/", "History: filter · paginate", "Employee", "200 · 400"),
 		endpoint("GET", "/activity", "Recent in / out / break events", "Employee", "200"),
 		endpoint("GET", "/{shiftId}", "One own shift with breaks", "Employee", "200 · 404"),
 		folder(

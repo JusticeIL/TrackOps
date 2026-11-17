@@ -63,8 +63,6 @@ public class ShiftDto
 
 	public eShiftStatus Status { get; set; }
 
-	public string? Note { get; set; }
-
 	public bool IsCorrected { get; set; }
 
 	public string RowVersion { get; set; } = string.Empty;
@@ -215,11 +213,6 @@ public class SignInRequest
 	public string? Username { get; set; }
 
 	public string? Password { get; set; }
-}
-
-public class ClockOutRequest
-{
-	public string? Note { get; set; }
 }
 
 public class ShiftQuery

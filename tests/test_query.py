@@ -1,4 +1,4 @@
-"""History search with the HTTP QUERY method: filters, search and pagination."""
+"""History search with the HTTP QUERY method: filters and pagination."""
 import pytest
 import requests
 
@@ -7,10 +7,9 @@ from conftest import BASE, TIMEOUT, work_shift
 
 @pytest.fixture
 def history(user, stub):
-	"""Twelve closed shifts on twelve consecutive days, notes numbered, plus one marked note."""
+	"""Twelve closed shifts on twelve consecutive days."""
 	for index in range(12):
-		note = "inventory count" if index == 5 else f"shift {index:02d}"
-		work_shift(user, stub, f"2026-11-{index + 1:02d}T07:00:00Z", f"2026-11-{index + 1:02d}T15:00:00Z", note=note)
+		work_shift(user, stub, f"2026-11-{index + 1:02d}T07:00:00Z", f"2026-11-{index + 1:02d}T15:00:00Z")
 	return user
 
 
@@ -56,11 +55,12 @@ def test_date_range_filter_uses_zurich_local_dates(history):
 	assert {item["clockInUtc"][:10] for item in body["items"]} == {"2026-11-03", "2026-11-04", "2026-11-05"}
 
 
-def test_text_search_matches_the_note(history):
-	body = history.query("/shifts", {"search": "inventory"}).json()
+def test_own_history_has_no_text_search(history):
+	# A shift holds no free text, so "search" applies to the manager's list only (it matches
+	# employee names). On a user's own history the field is ignored, like any unknown field.
+	body = history.query("/shifts", {"search": "no shift contains this"}).json()
 
-	assert body["totalItems"] == 1
-	assert body["items"][0]["note"] == "inventory count"
+	assert body["totalItems"] == 12
 
 
 def test_status_filter(history, stub):

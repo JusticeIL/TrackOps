@@ -8,8 +8,8 @@ What was checked, what was found and fixed, and what proves it. "Test" names a p
 | Area | State | Proof |
 |---|---|---|
 | Input validation (server side) | Done | `test_sign_in_validates_input`, `test_invalid_queries_are_rejected`, `test_invalid_corrections_are_rejected`, `test_calendar_rejects_invalid_dates` |
-| SQL injection | Done | `test_sql_in_search_is_treated_as_text`, `test_sql_in_manager_search_is_treated_as_text`, `test_like_wildcards_in_search_match_literally`, `test_sql_in_a_note_is_stored_as_text` |
-| XSS | Done | `test_script_in_a_note_is_stored_and_returned_as_plain_data`, `test_script_in_a_search_term_is_not_reflected_as_html`, CSP test below |
+| SQL injection | Done | `test_sql_in_search_is_treated_as_text`, `test_like_wildcards_in_search_match_literally`, `test_sql_in_a_correction_reason_is_stored_as_text` |
+| XSS | Done | `test_script_in_a_correction_reason_is_stored_and_returned_as_plain_data`, `test_script_in_a_search_term_is_not_reflected_as_html`, CSP test below |
 | CSRF | Done | Five tests named `test_*csrf*` in `test_security.py` |
 | CORS | Done | `test_foreign_origin_gets_no_cors_permission`, `test_foreign_origin_preflight_is_not_approved`, `test_own_origin_preflight_allows_the_query_method` |
 | Security headers | Done | `test_page_has_security_headers`, `test_api_has_security_headers_and_is_never_cached`, `test_https_mode_sets_secure_cookies_and_hsts` |

@@ -19,7 +19,6 @@ public static class ShiftMapper
 		ClockInUtc = shift.ClockInUtc,
 		ClockOutUtc = shift.ClockOutUtc,
 		Status = shift.Status,
-		Note = shift.Note,
 		IsCorrected = shift.IsCorrected,
 		RowVersionBytes = shift.RowVersion,
 		Breaks = shift.Breaks
@@ -39,7 +38,6 @@ public static class ShiftMapper
 			ClockInUtc = i_Shift.ClockInUtc,
 			ClockOutUtc = i_Shift.ClockOutUtc,
 			Status = i_Shift.Status,
-			Note = i_Shift.Note,
 			IsCorrected = i_Shift.IsCorrected,
 			RowVersionBytes = i_Shift.RowVersion,
 			Breaks = i_Shift.Breaks
@@ -99,7 +97,10 @@ public static class ShiftMapper
 	}
 }
 
-/// <summary>Filtering, searching and paging shared by "my history" and the manager's "all shifts".</summary>
+/// <summary>
+/// Filtering and paging shared by "my history" and the manager's "all shifts".
+/// Text search matches employee names, so it applies to the manager's list only.
+/// </summary>
 public static class ShiftSearch
 {
 	public const int k_DefaultPageSize = 20;
@@ -211,16 +212,13 @@ public static class ShiftSearch
 			query = query.Where(shift => statuses.Contains(shift.Status));
 		}
 
-		if (!string.IsNullOrWhiteSpace(i_Query.Search))
+		if (i_SearchUserNames && !string.IsNullOrWhiteSpace(i_Query.Search))
 		{
 			const bool v_PrefixOnly = true;
 			string pattern = ToLikePattern(i_Query.Search.Trim(), !v_PrefixOnly);
 
-			query = i_SearchUserNames
-				? query.Where(shift => EF.Functions.Like(shift.Note!, pattern, k_LikeEscape)
-					|| EF.Functions.Like(shift.User!.Username, pattern, k_LikeEscape)
-					|| EF.Functions.Like(shift.User!.DisplayName, pattern, k_LikeEscape))
-				: query.Where(shift => EF.Functions.Like(shift.Note!, pattern, k_LikeEscape));
+			query = query.Where(shift => EF.Functions.Like(shift.User!.Username, pattern, k_LikeEscape)
+				|| EF.Functions.Like(shift.User!.DisplayName, pattern, k_LikeEscape));
 		}
 
 		return query;

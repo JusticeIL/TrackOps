@@ -107,7 +107,7 @@ Counted in Redis, so both replicas share them. Limits are per minute and configu
   "id": 42, "userId": 7, "username": "dana", "displayName": "dana",
   "clockInUtc": "2026-11-17T07:00:12Z", "clockOutUtc": null,
   "status": "Open",            // Open | Closed | AutoClosed
-  "note": null, "isCorrected": false, "rowVersion": "AAAAAAAAB9E=",
+  "isCorrected": false, "rowVersion": "AAAAAAAAB9E=",
   "shiftMinutes": null, "breakMinutes": null, "workedMinutes": null,   // null while open
   "breaks": [ { "id": 5, "startUtc": "2026-11-17T10:00:03Z", "endUtc": null, "minutes": null } ]
 }
@@ -143,11 +143,11 @@ No password is stored or compared.
 | Method | Path | Role | Success | Notes |
 |---|---|---|---|---|
 | POST | `/shifts` ★ | Employee | 201 Shift, `Location` | Clock in. 409 `shift_already_open`. 503. |
-| POST | `/shifts/current/clock-out` ★ | Employee | 200 Shift | Optional body `{ note }` (max 200). Closes an open break at the same instant. 409 `no_open_shift`. 503. |
+| POST | `/shifts/current/clock-out` ★ | Employee | 200 Shift | No body. Closes an open break at the same instant. 409 `no_open_shift`. 503. |
 | GET | `/shifts/current` | Employee | 200 Shift, or 204 | |
 | GET | `/shifts/{shiftId}` | Employee | 200 Shift | 404 for another user's shift. |
 | GET | `/shifts/activity?limit=10` | Employee | 200 `{ items: [{ type, atUtc, shiftId }] }` | `type`: `ClockIn`, `ClockOut`, `BreakStart`, `BreakEnd`. `limit` 1–50. |
-| QUERY | `/shifts` | Employee | 200 page of Shift | Body `{ from?, to?, status?: [..], search?, page?, pageSize? }`. `from`/`to` are local dates of clock-in, inclusive. `search` matches the note. |
+| QUERY | `/shifts` | Employee | 200 page of Shift | Body `{ from?, to?, status?: [..], page?, pageSize? }`. `from`/`to` are local dates of clock-in, inclusive. |
 
 ### Breaks
 
@@ -175,7 +175,7 @@ counts up to the current time from the time source. A day lists every shift that
 | Method | Path | Success | Notes |
 |---|---|---|---|
 | QUERY | `/employees` | 200 `{ items: [User] }` | Body `{ search, limit? }`; `limit` 1–20. Prefix match on username and display name. |
-| QUERY | `/employees/shifts` | 200 page of Shift | Body `{ userId?, from?, to?, status?, search?, page?, pageSize? }`. `search` matches username, display name or note. |
+| QUERY | `/employees/shifts` | 200 page of Shift | Body `{ userId?, from?, to?, status?, search?, page?, pageSize? }`. `search` matches username or display name. |
 | PATCH | `/employees/{userId}/shifts/{shiftId}` | 200 Shift | Body `{ clockInUtc?, clockOutUtc?, reason, rowVersion }`. `reason` 3–300 characters. 409 `stale_version` or `shift_overlap`. Writes an audit row. |
 | GET | `/employees/{userId}/shifts/{shiftId}/audit` | 200 `{ items: [{ id, kind, changedBy: User, changedAtUtc, reason, oldClockInUtc, oldClockOutUtc, newClockInUtc, newClockOutUtc }] }` | `kind`: `ManagerCorrection`, `AutoClose`. |
 

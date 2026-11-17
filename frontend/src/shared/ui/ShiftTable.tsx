@@ -30,7 +30,6 @@ export const ShiftTable = memo(function ShiftTable({ shifts, caption, showEmploy
             <th scope="col">הפסקות</th>
             <th scope="col">שעות עבודה</th>
             <th scope="col">סטטוס</th>
-            <th scope="col">הערה</th>
             {renderActions && <th scope="col">פעולות</th>}
           </tr>
         </thead>
@@ -49,8 +48,6 @@ export const ShiftTable = memo(function ShiftTable({ shifts, caption, showEmploy
                 <StatusBadge status={shift.status} />
                 {shift.isCorrected && <span className="badge badge-closed"> תוקנה</span>}
               </td>
-              {/* React escapes text, so a note is always shown as plain text, never as HTML. */}
-              <td className="wrap">{shift.note ?? ''}</td>
               {renderActions && <td>{renderActions(shift)}</td>}
             </tr>
           ))}

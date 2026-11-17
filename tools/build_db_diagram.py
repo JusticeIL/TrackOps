@@ -52,7 +52,6 @@ TABLES = {
 			column("ClockInUtc", INSTANT),
 			column("ClockOutUtc", INSTANT, nullable=True),
 			column("Status", "int"),
-			column("Note", "nvarchar(200)", nullable=True),
 			column("TimeSource", "nvarchar(32)"),
 			column("IsCorrected", "bit"),
 			column("RowVersion", "rowversion"),

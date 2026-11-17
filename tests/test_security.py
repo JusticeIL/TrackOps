@@ -181,20 +181,30 @@ def test_own_origin_preflight_allows_the_query_method(stub):
 XSS_PAYLOAD = '<img src=x onerror=alert(1)><script>alert("xss")</script>'
 
 
-def test_script_in_a_note_is_stored_and_returned_as_plain_data(user, stub):
-	shift = work_shift(user, stub, "2026-11-17T07:00:00Z", "2026-11-17T15:00:00Z", note=XSS_PAYLOAD)
-	response = user.query("/shifts")
+def correct_with_reason(manager, stub, reason):
+	"""The correction reason is the only free text the system stores. Returns the audit trail response."""
+	employee = Client()
+	shift = work_shift(employee, stub, "2026-11-17T07:00:00Z", "2026-11-17T15:00:00Z")
+	path = f"/employees/{employee.user['id']}/shifts/{shift['id']}"
+	corrected = manager.request("PATCH", path, json={
+		"clockOutUtc": "2026-11-17T14:00:00Z", "reason": reason, "rowVersion": shift["rowVersion"]})
+
+	assert corrected.status_code == 200, corrected.text
+	return manager.get(path + "/audit")
+
+
+def test_script_in_a_correction_reason_is_stored_and_returned_as_plain_data(manager, stub):
+	audit = correct_with_reason(manager, stub, XSS_PAYLOAD)
 
 	# The API returns JSON with nosniff, so a browser never treats it as HTML; React then
-	# renders the note as text. The value itself is kept exactly as typed.
-	assert shift["note"] == XSS_PAYLOAD
-	assert response.headers["Content-Type"].startswith("application/json")
-	assert response.headers["X-Content-Type-Options"] == "nosniff"
-	assert response.json()["items"][0]["note"] == XSS_PAYLOAD
+	# renders the reason as text. The value itself is kept exactly as typed.
+	assert audit.headers["Content-Type"].startswith("application/json")
+	assert audit.headers["X-Content-Type-Options"] == "nosniff"
+	assert audit.json()["items"][0]["reason"] == XSS_PAYLOAD
 
 
-def test_script_in_a_search_term_is_not_reflected_as_html(user, stub):
-	response = user.query("/shifts", {"search": XSS_PAYLOAD})
+def test_script_in_a_search_term_is_not_reflected_as_html(manager):
+	response = manager.query("/employees/shifts", {"search": XSS_PAYLOAD})
 
 	assert response.status_code == 200
 	assert response.headers["Content-Type"].startswith("application/json")
@@ -212,44 +222,33 @@ SQL_PAYLOADS = [
 
 
 @pytest.mark.parametrize("payload", SQL_PAYLOADS)
-def test_sql_in_search_is_treated_as_text(user, stub, payload):
-	work_shift(user, stub, "2026-11-17T07:00:00Z", "2026-11-17T15:00:00Z", note="ordinary note")
+def test_sql_in_search_is_treated_as_text(manager, user, stub, payload):
+	work_shift(user, stub, "2026-11-17T07:00:00Z", "2026-11-17T15:00:00Z")
 
-	injected = user.query("/shifts", {"search": payload})
-	after = user.query("/shifts")
+	employees = manager.query("/employees", {"search": payload})
+	shifts = manager.query("/employees/shifts", {"search": payload})
+	after = manager.query("/employees/shifts", {"userId": user.user["id"]})
 
-	assert injected.status_code == 200
-	assert injected.json()["totalItems"] == 0, "a tautology must not match every row"
+	# The search matches employee names, and a name may not contain these characters.
+	assert employees.status_code == 200 and employees.json()["items"] == []
+	assert shifts.status_code == 200
+	assert shifts.json()["totalItems"] == 0, "a tautology must not match every row"
 	assert after.json()["totalItems"] == 1, "the table still exists and still has the row"
 
 
-@pytest.mark.parametrize("payload", SQL_PAYLOADS)
-def test_sql_in_manager_search_is_treated_as_text(manager, payload):
-	employees = manager.query("/employees", {"search": payload})
-	shifts = manager.query("/employees/shifts", {"search": payload, "pageSize": 100})
-	everything = manager.query("/employees/shifts", {"pageSize": 1})
+def test_like_wildcards_in_search_match_literally(manager, user, stub):
+	work_shift(user, stub, "2026-11-17T07:00:00Z", "2026-11-17T15:00:00Z")
 
-	assert employees.status_code == 200 and employees.json()["items"] == []
-	assert shifts.status_code == 200
-	# The manager sees every user's notes, and another test stores a note with this exact text.
-	# So the search may find rows, but only rows that contain the payload literally, and never all rows.
-	for item in shifts.json()["items"]:
-		assert payload.lower() in (item["note"] or "").lower()
-	assert shifts.json()["totalItems"] < everything.json()["totalItems"]
+	assert manager.query("/employees/shifts", {"search": user.username}).json()["totalItems"] == 1
+	assert manager.query("/employees/shifts", {"search": "%"}).json()["totalItems"] == 0
+	assert manager.query("/employees/shifts", {"search": "_" * len(user.username)}).json()["totalItems"] == 0
 
 
-def test_like_wildcards_in_search_match_literally(user, stub):
-	work_shift(user, stub, "2026-11-17T07:00:00Z", "2026-11-17T15:00:00Z", note="plain")
+def test_sql_in_a_correction_reason_is_stored_as_text(manager, stub):
+	audit = correct_with_reason(manager, stub, SQL_PAYLOADS[1])
 
-	assert user.query("/shifts", {"search": "%"}).json()["totalItems"] == 0
-	assert user.query("/shifts", {"search": "_____"}).json()["totalItems"] == 0
-
-
-def test_sql_in_a_note_is_stored_as_text(user, stub):
-	shift = work_shift(user, stub, "2026-11-17T07:00:00Z", "2026-11-17T15:00:00Z", note=SQL_PAYLOADS[1])
-
-	assert shift["note"] == SQL_PAYLOADS[1]
-	assert user.query("/shifts").json()["totalItems"] == 1
+	assert audit.json()["items"][0]["reason"] == SQL_PAYLOADS[1]
+	assert manager.query("/employees/shifts", {"pageSize": 1}).json()["totalItems"] > 0
 
 
 def test_sql_in_a_username_is_rejected_by_validation(stub):

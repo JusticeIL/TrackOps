@@ -48,8 +48,6 @@ public class Shift
 
 	public eShiftStatus Status { get; set; }
 
-	public string? Note { get; set; }
-
 	public string TimeSource { get; set; } = string.Empty;
 
 	public bool IsCorrected { get; set; }

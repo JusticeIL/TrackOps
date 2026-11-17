@@ -44,12 +44,9 @@ public class ShiftsController : ControllerBase
 
 	[HttpPost("current/clock-out")]
 	[RateLimit(eRateLimitBucket.Recording)]
-	public async Task<IActionResult> ClockOut(
-		[FromHeader(Name = k_IdempotencyHeader)] string? i_IdempotencyKey,
-		[FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] ClockOutRequest? i_Request,
-		CancellationToken i_CancellationToken)
+	public async Task<IActionResult> ClockOut([FromHeader(Name = k_IdempotencyHeader)] string? i_IdempotencyKey, CancellationToken i_CancellationToken)
 	{
-		RecordingResult result = await r_Recording.ClockOutAsync(User.GetCurrentUser(), parseKey(i_IdempotencyKey), i_Request?.Note, i_CancellationToken);
+		RecordingResult result = await r_Recording.ClockOutAsync(User.GetCurrentUser(), parseKey(i_IdempotencyKey), i_CancellationToken);
 
 		return recorded(result);
 	}

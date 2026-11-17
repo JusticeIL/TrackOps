@@ -18,7 +18,6 @@ namespace TrackOps.Application.Services;
 /// </summary>
 public class ShiftRecordingService
 {
-	public const int k_MaxNoteLength = 200;
 	private const string k_ClockIn = "clock-in";
 	private const string k_ClockOut = "clock-out";
 	private const string k_BreakStart = "break-start";
@@ -68,18 +67,8 @@ public class ShiftRecordingService
 			i_CancellationToken);
 	}
 
-	public Task<RecordingResult> ClockOutAsync(CurrentUser i_User, Guid i_IdempotencyKey, string? i_Note, CancellationToken i_CancellationToken)
+	public Task<RecordingResult> ClockOutAsync(CurrentUser i_User, Guid i_IdempotencyKey, CancellationToken i_CancellationToken)
 	{
-		string? note = string.IsNullOrWhiteSpace(i_Note) ? null : i_Note.Trim();
-
-		if (note != null && note.Length > k_MaxNoteLength)
-		{
-			ValidationErrors errors = new ValidationErrors();
-
-			errors.Add("note", $"note must be at most {k_MaxNoteLength} characters");
-			errors.ThrowIfAny();
-		}
-
 		return recordAsync(
 			i_User,
 			i_IdempotencyKey,
@@ -99,7 +88,6 @@ public class ShiftRecordingService
 
 				shift.ClockOutUtc = reading.Utc;
 				shift.Status = eShiftStatus.Closed;
-				shift.Note = note;
 
 				return shift;
 			},

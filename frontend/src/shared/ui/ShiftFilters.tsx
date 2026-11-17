@@ -25,7 +25,8 @@ const PAGE_SIZE = 10
 interface ShiftFiltersProps {
   idPrefix: string
   values: ShiftFilterValues
-  searchLabel: string
+  /** Shown only where there is text to search: the manager's list searches employee names. */
+  searchLabel?: string
   onChange: (values: ShiftFilterValues) => void
   children?: ReactNode
 }
@@ -47,17 +48,19 @@ export function ShiftFilters({ idPrefix, values, searchLabel, onChange, children
         <label htmlFor={`${idPrefix}-to`}>עד תאריך</label>
         <input id={`${idPrefix}-to`} type="date" className="input" value={values.to} onChange={(event) => onChange({ ...values, to: event.target.value })} />
       </div>
-      <div className="field">
-        <label htmlFor={`${idPrefix}-search`}>{searchLabel}</label>
-        <input
-          id={`${idPrefix}-search`}
-          type="search"
-          className="input"
-          maxLength={100}
-          value={values.search}
-          onChange={(event) => onChange({ ...values, search: event.target.value })}
-        />
-      </div>
+      {searchLabel && (
+        <div className="field">
+          <label htmlFor={`${idPrefix}-search`}>{searchLabel}</label>
+          <input
+            id={`${idPrefix}-search`}
+            type="search"
+            className="input"
+            maxLength={100}
+            value={values.search}
+            onChange={(event) => onChange({ ...values, search: event.target.value })}
+          />
+        </div>
+      )}
       <fieldset className="field checks">
         <legend className="visually-hidden">סטטוס</legend>
         {STATUS_OPTIONS.map((option) => (
