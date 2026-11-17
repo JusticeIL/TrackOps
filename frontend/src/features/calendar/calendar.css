@@ -112,7 +112,8 @@
   gap: var(--space-3);
   max-block-size: 320px;
   overflow-y: auto;
-  scrollbar-color: var(--accent-ink) var(--accent-tint);
+  /* A grey thumb on a light track, the way scrollbars usually look. */
+  scrollbar-color: var(--line-strong) var(--line);
 }
 
 .event-card {
