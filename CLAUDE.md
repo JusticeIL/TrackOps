@@ -41,6 +41,9 @@ tests/.venv/Scripts/python -m pytest                       # all, about 3 minute
 tests/.venv/Scripts/python -m pytest tests/test_clock.py   # one file
 tests/.venv/Scripts/python -m pytest tests/test_static_clock.py   # needs no stack
 
+# Demo history for the employee "demo" (developer tool; never run automatically)
+python tools/seed_demo_data.py
+
 # Backend
 dotnet build backend/TrackOps.sln            # needs the .NET 11 SDK; must stay at 0 warnings
 docker compose up -d --build backend-1 backend-2

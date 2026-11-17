@@ -21,7 +21,7 @@ export default function HistoryPage() {
         <h1>היסטוריית משמרות</h1>
       </div>
       <section className="card" aria-label="המשמרות שלי">
-        <ShiftFilters idPrefix="history" values={filters} searchLabel="חיפוש בהערות" onChange={changeFilters} />
+        <ShiftFilters idPrefix="history" values={filters} onChange={changeFilters} />
         {result.isError ? (
           <Notice kind="error">{describeError(result.error)}</Notice>
         ) : result.isPending ? (

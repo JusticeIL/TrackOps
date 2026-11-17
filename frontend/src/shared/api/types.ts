@@ -26,7 +26,6 @@ export interface Shift {
   clockInUtc: string
   clockOutUtc: string | null
   status: ShiftStatus
-  note: string | null
   isCorrected: boolean
   rowVersion: string
   shiftMinutes: number | null

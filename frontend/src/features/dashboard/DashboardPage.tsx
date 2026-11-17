@@ -1,10 +1,10 @@
 // Container for the dashboard: it owns the data and hands plain values to the cards below.
-// The four reads are independent queries, so the browser sends them in parallel.
+// The three reads are independent queries, so the browser sends them in parallel.
 import { useQuery } from '@tanstack/react-query'
 import { useSession } from '../auth/session'
 import { api } from '../../shared/api/client'
-import type { ActivityItem, CalendarDay, CalendarMonth } from '../../shared/api/types'
-import { ActivityCard, OvertimeCard, TodaySummaryCard } from './cards'
+import type { ActivityItem, CalendarDay } from '../../shared/api/types'
+import { ActivityCard, TodaySummaryCard } from './cards'
 import { ClockCard } from './ClockCard'
 import { useCurrentShift } from './shiftActions'
 import './dashboard.css'
@@ -25,12 +25,6 @@ export default function DashboardPage() {
     queryKey: ['activity'],
     queryFn: () => api<{ items: ActivityItem[] }>('GET', '/shifts/activity?limit=10'),
   })
-  const month = today.data?.date.slice(0, 7)
-  const monthSummary = useQuery({
-    queryKey: ['calendar', 'month', month],
-    queryFn: () => api<CalendarMonth>('GET', `/calendar/months/${month}`),
-    enabled: Boolean(month),
-  })
   const openBreak = currentShift.data?.breaks.find((pause) => pause.endUtc === null)
   const status = !currentShift.data ? 'מחוץ למשמרת' : openBreak ? 'בהפסקה' : 'במשמרת'
 
@@ -44,7 +38,6 @@ export default function DashboardPage() {
       <div className="dashboard-grid">
         <ClockCard shift={currentShift.data ?? null} isLoading={currentShift.isPending} />
         <TodaySummaryCard day={today.data} status={status} isLoading={today.isPending} />
-        <OvertimeCard day={today.data} month={monthSummary.data} isLoading={today.isPending || monthSummary.isPending} />
         <ActivityCard items={activity.data?.items} isLoading={activity.isPending} />
       </div>
     </>

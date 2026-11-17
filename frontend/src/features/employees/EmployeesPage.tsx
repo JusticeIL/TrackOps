@@ -44,7 +44,7 @@ export default function EmployeesPage() {
         <h1>עובדים</h1>
       </div>
       <section className="card" aria-label="משמרות כל העובדים">
-        <ShiftFilters idPrefix="employees" values={filters} searchLabel="חיפוש בשם או בהערה" onChange={changeFilters}>
+        <ShiftFilters idPrefix="employees" values={filters} searchLabel="חיפוש לפי שם עובד" onChange={changeFilters}>
           <EmployeePicker selected={employee} onSelect={changeEmployee} />
         </ShiftFilters>
         {result.isError ? (

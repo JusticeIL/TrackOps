@@ -76,7 +76,6 @@ public class AppDbContext : DbContext, IAppDbContext
 
 		i_Builder.Entity<Shift>(shift =>
 		{
-			shift.Property(entity => entity.Note).HasMaxLength(200);
 			shift.Property(entity => entity.TimeSource).HasMaxLength(32);
 			shift.Property(entity => entity.RowVersion).IsRowVersion();
 			shift.HasOne(entity => entity.User).WithMany().HasForeignKey(entity => entity.UserId).OnDelete(DeleteBehavior.Restrict);

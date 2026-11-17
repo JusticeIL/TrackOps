@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { describeError } from '../../shared/api/client'
 import type { Shift } from '../../shared/api/types'
 import { useServerNow, useServerNowReader } from '../../shared/time/serverClock'
@@ -6,8 +5,6 @@ import { formatClock, formatLongDate, formatTime } from '../../shared/time/zuric
 import { Notice, Skeleton } from '../../shared/ui/components'
 import { useShiftAction } from './shiftActions'
 import type { ShiftAction } from './shiftActions'
-
-const MAX_NOTE_LENGTH = 200
 
 /** Only this small component re-renders every second; the rest of the dashboard does not. */
 function LiveClock() {
@@ -36,14 +33,10 @@ function LiveClock() {
 export function ClockCard({ shift, isLoading }: { shift: Shift | null; isLoading: boolean }) {
   const action = useShiftAction()
   const readDisplayNow = useServerNowReader()
-  const [note, setNote] = useState('')
   const openBreak = shift?.breaks.find((pause) => pause.endUtc === null)
 
   function run(next: ShiftAction) {
-    action.mutate(
-      { action: next, idempotencyKey: crypto.randomUUID(), displayNowMs: readDisplayNow(), note: note.trim() || undefined },
-      { onSuccess: () => next === 'clockOut' && setNote('') },
-    )
+    action.mutate({ action: next, idempotencyKey: crypto.randomUUID(), displayNowMs: readDisplayNow() })
   }
 
   return (
@@ -59,16 +52,6 @@ export function ClockCard({ shift, isLoading }: { shift: Shift | null; isLoading
             {openBreak ? 'בהפסקה מאז ' : 'במשמרת מאז '}
             <span className="latin">{formatTime(openBreak ? openBreak.startUtc : shift.clockInUtc)}</span>
           </p>
-          <div className="field">
-            <label htmlFor="clock-out-note">הערה ליציאה (לא חובה)</label>
-            <input
-              id="clock-out-note"
-              className="input"
-              maxLength={MAX_NOTE_LENGTH}
-              value={note}
-              onChange={(event) => setNote(event.target.value)}
-            />
-          </div>
           <div className="clock-actions">
             <button type="button" className="button button-dark button-large" disabled={action.isPending} onClick={() => run('clockOut')}>
               יציאה

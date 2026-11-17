@@ -15,7 +15,7 @@ def test_clock_in_and_out_record_the_external_time(user, stub):
 	stub.set("2026-11-17T07:00:00Z")
 	opened = user.clock_in()
 	stub.set("2026-11-17T15:30:00Z")
-	closed = user.clock_out(note="done")
+	closed = user.clock_out()
 
 	assert opened.status_code == 201
 	assert opened.headers["Location"].endswith(f"/shifts/{opened.json()['id']}")
@@ -24,7 +24,6 @@ def test_clock_in_and_out_record_the_external_time(user, stub):
 	assert closed.status_code == 200
 	assert closed.json()["clockOutUtc"].startswith("2026-11-17T15:30:0")
 	assert closed.json()["status"] == "Closed"
-	assert closed.json()["note"] == "done"
 	assert closed.json()["shiftMinutes"] == approx(510)
 	assert closed.json()["workedMinutes"] == approx(510)
 

@@ -16,7 +16,7 @@ partial class AppDbContextModelSnapshot : ModelSnapshot
     // If you encounter a merge conflict in the line below, it means you need to
     // discard one of the migration branches and recreate its migrations on top of
     // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-    public override string LastMigrationId => "20261116224949_DropUserCreatedAt";
+    public override string LastMigrationId => "20261117061439_DropShiftNote";
 
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
@@ -111,10 +111,6 @@ partial class AppDbContextModelSnapshot : ModelSnapshot
 
                 b.Property<bool>("IsCorrected")
                     .HasColumnType("bit");
-
-                b.Property<string>("Note")
-                    .HasMaxLength(200)
-                    .HasColumnType("nvarchar(200)");
 
                 b.Property<byte[]>("RowVersion")
                     .IsConcurrencyToken()

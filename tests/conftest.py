@@ -67,8 +67,8 @@ class Client:
 	def clock_in(self, key=None):
 		return self.record("/shifts", key)
 
-	def clock_out(self, key=None, note=None):
-		return self.record("/shifts/current/clock-out", key, json={"note": note} if note is not None else None)
+	def clock_out(self, key=None):
+		return self.record("/shifts/current/clock-out", key)
 
 	def break_start(self, key=None):
 		return self.record("/shifts/current/breaks/current/start", key)
@@ -120,11 +120,11 @@ def manager(stub):
 	return Client("admin")
 
 
-def work_shift(client, stub, start_utc, end_utc, note=None):
+def work_shift(client, stub, start_utc, end_utc):
 	"""Clocks a user in at one instant and out at another, and returns the closed shift."""
 	stub.set(start_utc)
 	assert client.clock_in().status_code == 201
 	stub.set(end_utc)
-	response = client.clock_out(note=note)
+	response = client.clock_out()
 	assert response.status_code == 200, response.text
 	return response.json()

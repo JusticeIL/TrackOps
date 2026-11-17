@@ -35,23 +35,21 @@
 }
 
 .day-cell:hover {
-  border-color: var(--line-strong);
+  border-color: var(--accent-ink);
 }
 
-.day-cell[aria-pressed='true'] {
-  background: var(--ink);
-  border-color: var(--ink);
-  color: var(--paper);
-}
-
-.day-cell[aria-pressed='true'] .badge-overtime {
-  background: var(--accent);
-  color: var(--ink);
-}
-
+/* Today: a light teal cell with a dark teal border (5.9 : 1 against white). */
 .day-today {
+  background: var(--accent-tint);
   border-color: var(--accent-ink);
   border-width: 2px;
+}
+
+/* The selected day: teal fill with near-black text (9.5 : 1). */
+.day-cell[aria-pressed='true'] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--ink);
 }
 
 .day-number {
