@@ -56,6 +56,15 @@ The alternative considered, "clock-in + shift minutes", was rejected: an open sh
 minutes yet; breaks and corrections need real instants; DST arithmetic is only right on
 instants; and a stored duration can drift from its endpoints.
 
+**A shift holds no free text.** An optional clock-out note existed during the build and was
+removed: the task does not ask for one, and it was one more input to validate, store, search and
+escape. The only free text the system stores is the reason of a manager's correction.
+
+**Demo data is not a recording.** The application cannot create a shift in the past, by design.
+`tools/seed_demo_data.py` is a developer tool that writes six weeks of history for one demo
+employee straight into the database, marked `TimeSource = 'demo-seed'`. It is never run
+automatically, so a fresh installation starts empty.
+
 The tables, keys, constraints and indexes are drawn in `docs/db/schema.png`.
 
 **Invariants live in the database**, so they hold for any number of replicas:
@@ -83,8 +92,9 @@ separate one-shot `migrator` container, so the two replicas never race on migrat
   shift crossing midnight is split between the two days.
 - Daily overtime = `max(0, worked − target)`. A short day counts zero; it does not cancel another
   day's overtime.
-- Monthly overtime = the sum of the days. The dashboard compares today's overtime with the
-  month's average daily overtime over days worked.
+- Monthly overtime = the sum of the days. Overtime is shown on the Calendar, per day and per
+  month. The dashboard shows only today's worked and break time; an overtime card was built and
+  removed to keep the home screen about clocking in and out.
 - DST needs no special case: a day is 23 h or 25 h long because its midnights are that far apart
   in UTC, and only real elapsed time is counted. A 22:00–06:00 night shift is 7 h in spring and
   9 h in autumn.
@@ -168,6 +178,9 @@ Two roles only: Employee and Manager. Manager routes are locked at controller le
   WCAG for text, so teal is used for fills and on dark surfaces, with near-black text on it; a
   darker teal is used for text on light surfaces. Every pairing and its ratio is listed in
   `frontend/src/shared/styles/tokens.css`. Lighthouse accessibility: 100 on all five screens.
+  Teal marks what matters now: the primary button, the selected day, today, the menu icons and
+  the active menu entry. A primary button loses its fill on hover and keeps a teal outline.
+  Disabled controls are mid grey (`#808080`).
 - **Font:** Heebo, bundled and served by our own nginx (Hebrew + Latin, three weights,
   `font-display: swap`). No CDN.
 - **Reusable React components** through a container/presentational split. A container

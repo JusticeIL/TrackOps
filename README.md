@@ -20,7 +20,7 @@ The backend runs on .NET 11.
 
 **Searches use the HTTP `QUERY` method** (RFC 10008, published June 2026). This was a deliberate
 choice. A search is a read, so it should be safe and repeatable like `GET`; but its filter
-(employee names, dates, free text) should not sit in the URL, where it ends up in browser
+(employee names, dates) should not sit in the URL, where it ends up in browser
 history, proxy logs and server access logs. `QUERY` gives both: the filter travels in the request
 body, and the method is defined as safe and idempotent, which `POST` is not.
 
@@ -72,6 +72,24 @@ The first run downloads the images (SQL Server is about 1.5 GB) and takes a few 
 
 Sign-in is a mock: any username (3–32 letters, digits, `.`, `_`, `-`) and any password of 8+
 characters work. The username `admin` is the manager; every other name is an employee.
+
+### Demo data (optional)
+
+A new database is empty, and the application cannot create a shift in the past: the time of every
+recording comes from the external time API. To try the History and Calendar screens with data,
+run this once while the stack is up:
+
+```bash
+python tools/seed_demo_data.py
+```
+
+It gives the employee `demo` six weeks of shifts: ordinary days, overtime, two shifts in one day,
+a night shift across midnight, a shift the system closed automatically and one a manager
+corrected. Sign in as `demo` with any password of 8+ characters. The tool needs only Python and
+Docker, can be run again (it replaces its own rows and touches nothing else) and is never run
+automatically. It writes the rows straight into SQL Server and marks them
+`TimeSource = 'demo-seed'`, so demo rows can always be told apart from real recordings. "Today" is
+taken from the application's `GET /time`, not from the computer's clock.
 
 ### The database sets itself up
 
@@ -221,7 +239,7 @@ backend/                TrackOps.sln
 frontend/src/           app (router, shell), features (one folder per screen), shared (api, time, ui)
 infra/                  nginx gateway config, test overlay
 tests/                  pytest suites and the stub time API
-tools/                  API and database diagram generators, Lighthouse runner
+tools/                  API and database diagram generators, Lighthouse runner, demo data
 docs/                   API contract and diagram, database diagram, security report
 .claude/                plans and the log of working with Claude Code
 ```
