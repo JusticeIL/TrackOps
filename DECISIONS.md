@@ -194,7 +194,32 @@ None of them has a sidebar entry, so there are no dead links.
 
 ## 8. Operations
 
-- Two stateless API replicas behind nginx. All shared state is in SQL Server and Redis.
+- **Containers, built on the machine that runs them.** Running everything natively (the reviewer's
+  own .NET and npm, no containers) was considered, so that each operating system would fit itself.
+  It was rejected: SQL Server cannot be installed on macOS at all and Redis has no native Windows
+  build, so a container-free setup cannot run on every system, while containers can. Nothing is
+  shipped pre-built: the backend and frontend images are built locally from the Dockerfiles and
+  match the local processor. Six of the seven base images are published for ARM as well as
+  Intel/AMD. SQL Server is Intel/AMD only, so `compose.yaml` names that platform and an ARM
+  machine runs it under emulation.
+- **Replication is a property of the design, not of Docker.** Two API replicas run behind nginx,
+  and more can be added, because of four choices:
+  - the API holds no state in its own memory: no sessions, counters, caches or locks;
+  - sessions, rate-limit counters, the calendar cache and the background-job lock are in Redis,
+    so every replica sees the same ones;
+  - the rules that must never break (one open shift per user, one open break per shift, one
+    recording per Idempotency-Key) are enforced by the database, so no replica can disagree;
+  - schema migrations run once in a separate container before any replica starts.
+
+  The same holds outside containers: two processes on two ports behind any load balancer behave
+  the same way. A third replica is two small edits (README, "More replicas"). It was tried:
+  requests were shared evenly, 30 simultaneous clock-ins opened exactly one shift, and a session
+  was valid on all three and revoked on all three at once. This is what gives availability (one
+  replica can stop, restart or be replaced while the others serve) and maintainability (a new
+  version can be rolled out one replica at a time).
+- What is still a single point of failure: SQL Server, Redis and the gateway each run once. Making
+  those redundant is an infrastructure matter (a database failover group, Redis replication, two
+  gateways) and needs no change in the application.
 - Rate limits are counted in Redis, so both replicas share them: sign-in 10/min per IP;
   recording 30/min, search 60/min and everything else 240/min per user.
 - Read cache: a calendar month with no open shift is cached for 60 s per user; any write to that
@@ -234,6 +259,9 @@ None of them has a sidebar entry, so there are no dead links.
 **Known limits:**
 
 - Depends on free public time APIs with unknown rate limits and no SLA.
+- Built and verified on Windows (Intel/AMD). Not tested on a Mac with Apple Silicon, where SQL
+  Server runs under emulation; a public report from October 2025 says macOS 26 broke that
+  emulation for a SQL Server container. Not tested on Windows on ARM either.
 - Runs on .NET 11.0.0, the first release of a non-LTS line (section 5).
 - No POST fallback for `QUERY` (section 5).
 - In the hour that repeats when DST ends, a manager typing a wall-clock time gets the earlier of

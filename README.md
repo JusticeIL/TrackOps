@@ -42,6 +42,7 @@ API contract: [docs/api/API.md](docs/api/API.md).
 ## Run it locally
 
 You need Docker Desktop (with Compose) and nothing else. On Windows use Git Bash or PowerShell.
+On a Mac, read "Windows, macOS and Linux" below first.
 
 **1. Create your `.env`.** It holds every secret; it is gitignored.
 
@@ -109,6 +110,47 @@ docker compose down -v
 | `sqlserver` | Database | no |
 | `redis` | Sessions, rate-limit counters, calendar cache | no |
 | `migrator` | Runs once, then exits | no |
+
+### Windows, macOS and Linux
+
+Nothing here is pre-built for one kind of computer. The backend and frontend images are built on
+your machine from the Dockerfiles, so they match its processor. The base images they start from:
+
+| Image | Published for |
+|---|---|
+| .NET SDK and ASP.NET runtime 11 | Intel/AMD and ARM |
+| Node 22, nginx, Redis, Python | Intel/AMD and ARM |
+| SQL Server 2022 | Intel/AMD only |
+
+- **Windows, Linux, or a Mac with an Intel processor:** nothing to do.
+- **Mac with Apple Silicon (M1 and later):** everything runs natively except SQL Server, which
+  Microsoft publishes for Intel/AMD only. `compose.yaml` names that platform, and Docker Desktop
+  runs it under emulation. In Docker Desktop, *Settings → General*, keep **Use Rosetta for
+  x86_64/amd64 emulation on Apple Silicon** switched on. The first start of the database is slower.
+
+  This path was not tested: the project was built and verified on Windows. There is a public
+  report from October 2025 that macOS 26 broke this emulation for a SQL Server container. If the
+  `sqlserver` container never becomes healthy on such a Mac, that is the likely cause, and the
+  project then needs an Intel/AMD machine.
+
+Why containers and not native installs: SQL Server cannot be installed on macOS at all, and
+Redis has no native Windows build. Containers are the only way the same three commands work on
+all three systems. Running the API and the frontend directly with `dotnet` and `npm` is still
+possible for development (see "Working on the code").
+
+### More replicas
+
+The API keeps no state in its own memory, so another replica is two small edits:
+
+1. In `compose.yaml`, copy the `backend-2` block as `backend-3` with `Security__ReplicaName: "3"`,
+   and add `backend-3` to the gateway's `depends_on`.
+2. In `infra/nginx/gateway.conf.template`, add `server backend-3:8080 resolve max_fails=2 fail_timeout=5s;`
+   to the `upstream` block.
+
+Then `docker compose up -d`. This was tried with three replicas: requests were shared evenly,
+30 simultaneous clock-ins by one user still opened exactly one shift, and a session was accepted
+by all three and revoked on all three at sign-out. [DECISIONS.md](DECISIONS.md#8-operations)
+explains what makes that work.
 
 ### HTTPS
 

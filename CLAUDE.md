@@ -126,3 +126,7 @@ In Frontend:
   IPv4 is published. Tests use `127.0.0.1`.
 - The stub clock keeps ticking, so minute counts in tests are compared with a one-minute tolerance.
 - nginx `add_header` in a location replaces inherited headers instead of adding to them.
+- The SQL Server image exists for linux/amd64 only; `compose.yaml` pins that platform. Every other
+  image is multi-architecture. Do not add a dependency whose image or native package lacks ARM.
+- The API must stay stateless (rule 3). Anything shared between requests goes to Redis or SQL
+  Server, never to a static field or an in-memory cache; that is what lets replicas be added.
