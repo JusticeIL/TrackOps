@@ -58,7 +58,14 @@ instants; and a stored duration can drift from its endpoints.
 
 **A shift holds no free text.** An optional clock-out note existed during the build and was
 removed: the task does not ask for one, and it was one more input to validate, store, search and
-escape. The only free text the system stores is the reason of a manager's correction.
+escape. The free text the system stores is the reason of a manager's correction and the title
+and content of a request (below).
+
+**Requests and reports** are one table, `EmployeeRequests`: type, status, title, content, the
+number of sick days (for a sickness report only, enforced by a check constraint) and the filing
+time. The filing time comes from the external time API like every recorded time, so filing fails
+closed with 503 when the time source is down. The id starts at 1001 and is the request number
+people see.
 
 **Demo data is not a recording.** The application cannot create a shift in the past, by design.
 `tools/seed_demo_data.py` is a developer tool that writes six weeks of history for one demo
@@ -198,24 +205,37 @@ role until it ends (24 hours at most).
 - TanStack Query provides request de-duplication, caching, optimistic updates with rollback and
   parallel requests. React Router provides one lazily loaded chunk per screen.
 
-### Preview screens
+### Screens beyond the clock: what is real and what is a sample
 
-"Forms and data", "Requests and reports" and the Events tab under the calendar are shown as
-pictures of the planned screens. Nothing in the task needs them, and building them for real
-(leave balances, a request workflow, an events calendar) would each be a feature with its own
-data and rules. A picture shows where the product is going without building it; each picture
-carries a text alternative. The numbers in the pictures are the design's sample values, not
-data from the system. Two parts of the "Forms and data" design were left out even as pictures:
-the salary and payslip cards and the form downloads.
+These screens were first embedded as pictures and then built for real, in the app's own three
+colours. The rule for each part: real where the system already holds the data, a sample where it
+does not, and never a sample that looks like the user's own data without being it.
 
-The Calendar screen is titled "Shifts and events". Below the month, two tabs show the selected
-day: Shifts (the real shifts of that day) and Events (a picture).
+- **Forms and data.** Hours this month, the weekly average and this week's chart are derived in
+  the browser from two calendar months the API already serves (this month and the one before),
+  in one pure function (`summariseWork`). No new endpoint was needed, and the Calendar screen
+  shares the same cached answers. The month is compared with the same days of the previous
+  month, because comparing half a month with a whole one would always look like a drop. The
+  weekly average is over the 28 days before today. The chart's bars grow when the screen opens;
+  with "reduce motion" set in the system they do not. Vacation and sick days are fixed sample
+  numbers: there is no leave data. The salary and payslip cards and the form downloads were left
+  out.
+- **Requests and reports.** Filing is real: two forms (a new request, a sickness report) post to
+  `POST /requests`, and the request is stored and listed. The five rows numbered 0001–0005 are a
+  sample history kept in the frontend; stored requests are numbered from 1001, so the two never
+  collide. Statuses are coloured green, amber and red, the one deliberate use of colours outside
+  the palette. A filed request stays "in progress": there is no approval flow, because that
+  needs a manager and the manager role is off. File attachments and links from the design were
+  left out; uploads are a security surface of their own.
+- **Events tab** under the calendar (the screen is titled "Shifts and events"): a sample list,
+  the same for every day, scrolling inside its own frame. The Shifts tab shows the real shifts
+  of the selected day.
 
 ### Screens considered and left out
 
 | Dropped | Reason |
 |---|---|
-| New request form, Report sickness form | A request workflow unrelated to clocking shifts; the list screen is a picture only |
+| Files and links on a request, the request guidelines pop-up | Uploads need their own limits and scanning; the guidelines are static text |
 | Support (three frames) | Static help content adds no engineering depth |
 | Profile | With mock sign-in there is nothing to edit; sign-out moved to the header menu |
 | Company-rules card | Static content |
@@ -282,6 +302,8 @@ None of them has a sidebar entry, so there are no dead links.
 
 - OpenTelemetry tracing. It was last in the cut order and was cut. Logs are structured JSON.
 - Correcting individual breaks. A manager corrects clock-in and clock-out only.
+- Approving or rejecting a request, and an `Idempotency-Key` on filing one. A double submit is
+  prevented in the UI only (the button is disabled while the request is sent).
 - Unit tests inside the .NET solution. All tests are black-box pytest, as required; the DST and
   overtime logic is covered through the API.
 - Health checks on the API containers. The base image has no HTTP client for one; nginx detects a

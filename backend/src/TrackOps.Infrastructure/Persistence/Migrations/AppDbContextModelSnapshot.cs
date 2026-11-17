@@ -16,7 +16,7 @@ partial class AppDbContextModelSnapshot : ModelSnapshot
     // If you encounter a merge conflict in the line below, it means you need to
     // discard one of the migration branches and recreate its migrations on top of
     // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-    public override string LastMigrationId => "20261117061439_DropShiftNote";
+    public override string LastMigrationId => "20261117071048_AddEmployeeRequests";
 
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
@@ -57,6 +57,56 @@ partial class AppDbContextModelSnapshot : ModelSnapshot
                 b.ToTable("Breaks", t =>
                     {
                         t.HasCheckConstraint("CK_Breaks_EndAfterStart", "[EndUtc] IS NULL OR [EndUtc] > [StartUtc]");
+                    });
+            });
+
+        modelBuilder.Entity("TrackOps.Domain.Entities.EmployeeRequest", b =>
+            {
+                var id = b.Property<long>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("bigint");
+
+                SqlServerPropertyBuilderExtensions.UseIdentityColumn(id, 1001L);
+
+                b.Property<string>("Content")
+                    .IsRequired()
+                    .HasMaxLength(2000)
+                    .HasColumnType("nvarchar(2000)");
+
+                b.Property<DateTime>("CreatedAtUtc")
+                    .HasPrecision(3)
+                    .HasColumnType("datetime2(3)");
+
+                b.Property<int?>("SickDays")
+                    .HasColumnType("int");
+
+                b.Property<int>("Status")
+                    .HasColumnType("int");
+
+                b.Property<string>("Title")
+                    .IsRequired()
+                    .HasMaxLength(100)
+                    .HasColumnType("nvarchar(100)");
+
+                b.Property<int>("Type")
+                    .HasColumnType("int");
+
+                b.Property<int>("UserId")
+                    .HasColumnType("int");
+
+                b.HasKey("Id");
+
+                b.HasIndex("UserId", "Id")
+                    .IsDescending(false, true)
+                    .HasDatabaseName("IX_EmployeeRequests_User");
+
+                b.ToTable("EmployeeRequests", t =>
+                    {
+                        t.HasCheckConstraint("CK_EmployeeRequests_SickDays", "([Type] = 3 AND [SickDays] BETWEEN 1 AND 30) OR ([Type] <> 3 AND [SickDays] IS NULL)");
+
+                        t.HasCheckConstraint("CK_EmployeeRequests_Status", "[Status] IN (0, 1, 2)");
+
+                        t.HasCheckConstraint("CK_EmployeeRequests_Type", "[Type] BETWEEN 0 AND 6");
                     });
             });
 
@@ -246,6 +296,17 @@ partial class AppDbContextModelSnapshot : ModelSnapshot
                     .IsRequired();
 
                 b.Navigation("Shift");
+            });
+
+        modelBuilder.Entity("TrackOps.Domain.Entities.EmployeeRequest", b =>
+            {
+                b.HasOne("TrackOps.Domain.Entities.User", "User")
+                    .WithMany()
+                    .HasForeignKey("UserId")
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .IsRequired();
+
+                b.Navigation("User");
             });
 
         modelBuilder.Entity("TrackOps.Domain.Entities.Shift", b =>

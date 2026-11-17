@@ -66,6 +66,23 @@ export function DocumentIcon() {
   )
 }
 
+export function PlusIcon() {
+  return (
+    <Icon>
+      <path d="M12 5v14M5 12h14" />
+    </Icon>
+  )
+}
+
+export function SickIcon() {
+  return (
+    <Icon>
+      <path d="M4 5h16v11H9l-5 4z" />
+      <path d="M12 8v5M9.5 10.5h5" />
+    </Icon>
+  )
+}
+
 export function UsersIcon() {
   return (
     <Icon>

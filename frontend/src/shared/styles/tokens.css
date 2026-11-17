@@ -12,6 +12,12 @@
  *   --success    #1B6E36 on white              6.3 : 1   positive status
  *   --line-strong #8A8A8A on white             3.5 : 1   input borders and other UI parts
  *   --disabled   #808080 on --disabled-tint    3.4 : 1   disabled controls (WCAG exempts them from the minimum)
+ *
+ * Request statuses are the one place with colours outside the three: green, amber and red say
+ * approved, in progress and rejected. Each is dark text on a light fill of the same hue:
+ *   approved  #14562A on #CDEED8   7.0 : 1
+ *   progress  #6B3F00 on #FFD98A   6.7 : 1
+ *   rejected  #8F1D17 on #F8CFCB   6.3 : 1
  */
 :root {
   --ink: #0a0a0a;
@@ -31,6 +37,12 @@
   --success-tint: #e7f6ec;
   --warning-ink: #7a4b00;
   --warning-tint: #fff4dc;
+  --approved-ink: #14562a;
+  --approved-fill: #cdeed8;
+  --progress-ink: #6b3f00;
+  --progress-fill: #ffd98a;
+  --rejected-ink: #8f1d17;
+  --rejected-fill: #f8cfcb;
 
   --font: 'Heebo', system-ui, 'Segoe UI', Arial, sans-serif;
   --radius: 12px;

@@ -133,7 +133,9 @@ In Frontend:
   image is multi-architecture. Do not add a dependency whose image or native package lacks ARM.
 - The manager role is a setting: `MANAGER_USERNAME` (`Auth__ManagerUsername`), empty by default, so
   on the normal stack nobody is a manager. The test overlay sets it to `admin`.
-- `features/previews/` and the calendar's Events tab show pictures from `frontend/src/assets/previews/`.
-  They have no API behind them; do not add fake data to make them look live.
+- Sample data lives in the frontend only and is named `SAMPLE_*`: leave days (`features/formsData`),
+  the request history (`features/requests`) and events (`features/calendar`). Never put sample
+  rows in the database or the API. Everything else on those screens is real: hours come from the
+  calendar API, and a filed request is stored through `POST /requests`.
 - The API must stay stateless (rule 3). Anything shared between requests goes to Redis or SQL
   Server, never to a static field or an in-memory cache; that is what lets replicas be added.

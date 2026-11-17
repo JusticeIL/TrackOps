@@ -45,32 +45,6 @@ export function Notice({ kind, children }: { kind: 'error' | 'info'; children: R
   )
 }
 
-interface PreviewImageProps {
-  src: string
-  /** Says in words what the picture shows; it is the picture's content for screen readers. */
-  alt: string
-  /** Size in CSS pixels. The files are twice as large, so they stay sharp on dense screens. */
-  width: number
-  height: number
-  /** Without the card frame, for a picture that is not a card (a row of buttons). */
-  plain?: boolean
-}
-
-/** A static picture of a planned screen, embedded where the real screen would be. */
-export function PreviewImage({ src, alt, width, height, plain = false }: PreviewImageProps) {
-  return (
-    <img
-      className={plain ? 'preview-image preview-image-plain' : 'preview-image'}
-      src={src}
-      alt={alt}
-      width={width}
-      height={height}
-      loading="lazy"
-      decoding="async"
-    />
-  )
-}
-
 interface PaginationProps {
   page: number
   totalPages: number
