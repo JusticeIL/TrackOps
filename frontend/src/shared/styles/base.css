@@ -401,6 +401,27 @@ input[type='checkbox'] {
   align-items: center;
 }
 
+/* Pictures of planned screens. The frame (radius and shadow) matches the app's own cards. */
+.preview-image {
+  display: block;
+  max-inline-size: 100%;
+  block-size: auto;
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+}
+
+/* A picture with a white background that is not a card: multiply lets the page colour show through. */
+.preview-image-plain {
+  border-radius: 0;
+  box-shadow: none;
+  mix-blend-mode: multiply;
+}
+
+.preview-note {
+  margin-block-end: var(--space-4);
+  font-size: 0.875rem;
+}
+
 .skeleton {
   display: block;
   border-radius: var(--radius-small);

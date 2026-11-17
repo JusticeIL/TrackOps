@@ -1,0 +1,15 @@
+/* Layout of the pictures on the two preview screens. The picture itself is styled in base.css. */
+.preview-columns {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: start;
+  gap: var(--space-6);
+}
+
+/* Two small cards side by side, a wide one below them: the same arrangement as in the pictures' design. */
+.preview-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 23px;
+  max-inline-size: 583px;
+}

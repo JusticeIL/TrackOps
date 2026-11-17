@@ -60,6 +60,48 @@
   font-size: 0.875rem;
 }
 
+/* Below the calendar: the Shifts and Events tabs at the start, the selected date at the end. */
+.day-tabs-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--space-4);
+  border-block-end: 1px solid var(--line);
+  margin-block-end: var(--space-4);
+}
+
+.day-tabs {
+  display: flex;
+  gap: var(--space-4);
+}
+
+.day-tab {
+  padding: var(--space-2) var(--space-1);
+  border: 0;
+  border-block-end: 3px solid transparent;
+  margin-block-end: -1px;
+  background: none;
+  color: var(--muted);
+  font-size: 1.125rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+/* The open tab is near-black and bold; the teal line under it is an extra cue, not the only one. */
+.day-tab[aria-selected='true'] {
+  color: var(--ink);
+  font-weight: 700;
+  border-block-end-color: var(--accent);
+}
+
+.day-title {
+  padding-block-end: var(--space-2);
+  color: var(--muted);
+  font-size: 1rem;
+  font-weight: 500;
+}
+
 .month-totals {
   margin-block-start: var(--space-4);
 }
