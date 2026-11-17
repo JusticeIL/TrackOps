@@ -131,5 +131,9 @@ In Frontend:
 - nginx `add_header` in a location replaces inherited headers instead of adding to them.
 - The SQL Server image exists for linux/amd64 only; `compose.yaml` pins that platform. Every other
   image is multi-architecture. Do not add a dependency whose image or native package lacks ARM.
+- The manager role is a setting: `MANAGER_USERNAME` (`Auth__ManagerUsername`), empty by default, so
+  on the normal stack nobody is a manager. The test overlay sets it to `admin`.
+- `features/previews/` and the calendar's Events tab show pictures from `frontend/src/assets/previews/`.
+  They have no API behind them; do not add fake data to make them look live.
 - The API must stay stateless (rule 3). Anything shared between requests goes to Redis or SQL
   Server, never to a static field or an in-memory cache; that is what lets replicas be added.

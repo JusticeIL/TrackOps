@@ -42,6 +42,10 @@ code is in `plans/01-api-contract-and-execution-plan.md`.
 | 22 endpoints | 19 after removing the fallbacks | Follows from the first row |
 | It had checked the processor of my machine only | I asked what happens on the reviewer's machine, which may be a Mac | It then checked every base image: all support ARM except SQL Server, which it pinned and documented, with the untested Apple Silicon path stated as a limit |
 | Stay on .NET 10 LTS and word the docs accurately (its recommendation) | Move to .NET 11 | I wanted the runtime choice to be about `QUERY` for real. It showed me what .NET 11 actually adds (`HttpMethods.Query`, `HttpMethods.IsQuery`, and no attribute), then did the move and reran everything |
+| An optional free-text note on clock-out, which it had added without asking and without listing it as a decision | Removed everywhere | I asked what it was for. It answered plainly: it gave the history search something to search and the security tests a free-text field. Nothing in the task asks for it, so the column, the field, the search box and the tests' use of it went |
+| An overtime card on the home screen | Removed; overtime stays on the Calendar | The home screen is for clocking in and out |
+| A manager who signs in with the username `admin` | Off by default, behind one setting | The task is a clock for workers. It asked whether to delete the manager code or switch it off; I chose the switch, since the code is tested and is the only way to fix a shift the system closed by itself |
+| Two screens left out of the build (forms and data, requests and reports) | Shown as pictures of the planned screens, marked as samples | I wanted the menu to show where the product is going without building features the task does not ask for |
 
 ## Where Claude Code corrected me
 
@@ -75,6 +79,8 @@ code is in `plans/01-api-contract-and-execution-plan.md`.
 | Simultaneous retries with one Idempotency-Key could get 409 instead of the stored 201. The database was right (one shift); the answer to the retry was wrong | A full test run failed once on a test that had passed many times; it reasoned out the interleaving instead of rerunning until green | A conflict is now re-checked against the stored key before it is reported; the race is repeated five times in the tests |
 | `Users` had a `CreatedAtUtc` column that nothing set, so every row held 0001-01-01 | Reading the real migration to draw the database diagram, instead of drawing from memory | Dropped the column with a migration |
 | The plan said "built-in antiforgery" | While implementing: it needs data-protection keys shared between replicas | A small HMAC-signed token; listed as a deviation in DECISIONS.md |
+| The first version of the demo-data tool failed on its first run | It ran the tool instead of assuming | `sqlcmd` runs with `QUOTED_IDENTIFIER` off by default, and SQL Server refuses writes to tables with filtered indexes that way; one flag fixed it |
+| A commit message used a section heading that is not in my format | It compared its message with the earlier ones | It rewrote the three local commits before continuing |
 
 ## What was cut or left unverified
 
