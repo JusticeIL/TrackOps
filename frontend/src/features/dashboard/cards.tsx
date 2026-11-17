@@ -1,8 +1,8 @@
 // Presentational cards of the dashboard. They get data through props and are memoised,
 // so a card re-renders only when its own data changes.
 import { memo } from 'react'
-import type { ActivityItem, ActivityType, CalendarDay, CalendarMonth } from '../../shared/api/types'
-import { formatDate, formatHoursText, formatMinutes, formatTime } from '../../shared/time/zurich'
+import type { ActivityItem, ActivityType, CalendarDay } from '../../shared/api/types'
+import { formatDate, formatHoursText, formatTime } from '../../shared/time/zurich'
 import { SkeletonRows } from '../../shared/ui/components'
 
 interface TodaySummaryProps {
@@ -32,40 +32,6 @@ export const TodaySummaryCard = memo(function TodaySummaryCard({ day, status, is
             <dd>{status}</dd>
           </div>
         </dl>
-      )}
-    </section>
-  )
-})
-
-interface OvertimeProps {
-  day: CalendarDay | undefined
-  month: CalendarMonth | undefined
-  isLoading: boolean
-}
-
-function compareToAverage(todayMinutes: number, averageMinutes: number): string {
-  if (averageMinutes === 0) {
-    return 'אין עדיין ממוצע חודשי להשוואה'
-  }
-  const percent = Math.round(((todayMinutes - averageMinutes) / averageMinutes) * 100)
-  return `${percent >= 0 ? '+' : '−'}${Math.abs(percent)}% מהממוצע היומי החודשי`
-}
-
-export const OvertimeCard = memo(function OvertimeCard({ day, month, isLoading }: OvertimeProps) {
-  return (
-    <section className="card" aria-labelledby="overtime-title">
-      <h2 id="overtime-title">שעות נוספות היום</h2>
-      {isLoading || !day || !month ? (
-        <SkeletonRows rows={2} />
-      ) : (
-        <>
-          <p className="big-number latin">{formatMinutes(day.overtimeMinutes)}</p>
-          <p className="muted">{compareToAverage(day.overtimeMinutes, month.totals.averageDailyOvertimeMinutes)}</p>
-          <p className="muted">
-            סה״כ החודש: <span className="latin">{formatMinutes(month.totals.overtimeMinutes)}</span> · יעד יומי:{' '}
-            <span className="latin">{formatMinutes(day.dailyTargetMinutes)}</span>
-          </p>
-        </>
       )}
     </section>
   )

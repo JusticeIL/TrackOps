@@ -2,12 +2,13 @@ import { Suspense, useEffect, useRef, useState } from 'react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
 import { useSession, useSignOut } from '../features/auth/session'
 import { Logo, SkeletonRows } from '../shared/ui/components'
+import { CalendarIcon, HistoryIcon, HomeIcon, SignOutIcon, UsersIcon } from '../shared/ui/icons'
 
 const NAV_ITEMS = [
-  { to: '/', label: 'מסך הבית', managerOnly: false },
-  { to: '/history', label: 'היסטוריית משמרות', managerOnly: false },
-  { to: '/calendar', label: 'לוח שנה', managerOnly: false },
-  { to: '/employees', label: 'עובדים', managerOnly: true },
+  { to: '/', label: 'מסך הבית', icon: HomeIcon, managerOnly: false },
+  { to: '/history', label: 'היסטוריית משמרות', icon: HistoryIcon, managerOnly: false },
+  { to: '/calendar', label: 'לוח שנה', icon: CalendarIcon, managerOnly: false },
+  { to: '/employees', label: 'עובדים', icon: UsersIcon, managerOnly: true },
 ]
 
 function UserMenu() {
@@ -54,7 +55,8 @@ function UserMenu() {
       {isOpen && (
         <div id="user-menu-panel" className="card user-menu-panel stack">
           <span className="muted">{user.role === 'Manager' ? 'מנהל/ת' : 'עובד/ת'}</span>
-          <button type="button" className="button button-dark" onClick={() => signOut.mutate()} disabled={signOut.isPending}>
+          <button type="button" className="button button-primary" onClick={() => signOut.mutate()} disabled={signOut.isPending}>
+            <SignOutIcon />
             התנתקות
           </button>
         </div>
@@ -84,6 +86,7 @@ export function AppShell() {
           {NAV_ITEMS.filter((item) => !item.managerOnly || isManager).map((item) => (
             <li key={item.to}>
               <NavLink to={item.to} end={item.to === '/'} className="nav-link">
+                <item.icon />
                 {item.label}
               </NavLink>
             </li>
