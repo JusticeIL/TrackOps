@@ -1,12 +1,12 @@
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import type { KeyboardEvent } from 'react'
-import eventsPreview from '../../assets/previews/calendar-events.png'
 import { api, describeError } from '../../shared/api/client'
 import type { CalendarDay, CalendarMonth, DaySummary } from '../../shared/api/types'
 import { addMonths, formatDayTitle, formatHoursText, formatMinutes, formatMonthTitle, weekdayOf } from '../../shared/time/zurich'
-import { Notice, PreviewImage, SkeletonRows } from '../../shared/ui/components'
+import { Notice, SkeletonRows } from '../../shared/ui/components'
 import { ShiftTable } from '../../shared/ui/ShiftTable'
+import { SAMPLE_EVENTS } from './sampleEvents'
 import './calendar.css'
 
 const WEEKDAYS = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ש׳']
@@ -86,15 +86,22 @@ function DayShifts({ date }: { date: string }) {
   )
 }
 
-/** Events have no data behind them yet, so the tab shows a picture of the planned list. */
+/** Events have no data behind them yet, so the tab shows a sample list. It scrolls inside its own frame. */
 function DayEvents() {
   return (
-    <PreviewImage
-      src={eventsPreview}
-      alt="אירועים לדוגמה: בשעה 10:00 צוות פיתוח – ישיבה שבועית, סקירת התקדמות פרויקטים; בשעה 14:00 הכשרת בטיחות, הכשרה חובה לכל העובדים"
-      width={1318}
-      height={311}
-    />
+    // tabIndex makes the scrolling list reachable by keyboard, so it can be scrolled with the arrow keys.
+    <ul className="events-list" tabIndex={0} aria-label="אירועי היום">
+      {SAMPLE_EVENTS.map((event) => (
+        <li key={event.time} className="event-card">
+          <div className="event-text">
+            <strong>{event.title}</strong>
+            <span className="muted">{event.description}</span>
+            <span className="badge badge-open">{event.kind}</span>
+          </div>
+          <span className="event-time latin">{event.time}</span>
+        </li>
+      ))}
+    </ul>
   )
 }
 
@@ -142,7 +149,7 @@ function DayPanel({ date }: { date: string }) {
           {formatDayTitle(date)}
         </h2>
       </div>
-      <div id="day-panel" role="tabpanel" aria-labelledby={`day-tab-${tab}`} className={tab === 'shifts' ? 'card' : undefined}>
+      <div id="day-panel" role="tabpanel" aria-labelledby={`day-tab-${tab}`} className="card">
         {tab === 'shifts' ? <DayShifts date={date} /> : <DayEvents />}
       </div>
     </section>
