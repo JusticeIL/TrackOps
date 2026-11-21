@@ -259,8 +259,10 @@ your machine from the Dockerfiles, so they match its processor. The base images 
   runs it under emulation. In Docker Desktop, *Settings → General*, keep **Use Rosetta for
   x86_64/amd64 emulation on Apple Silicon** switched on. The first start of the database is slower.
 
-  This path was not tested: the project was built and verified on Windows. There is a public
-  report from October 2025 that macOS 26 broke this emulation for a SQL Server container. If the
+  What was checked: every base image except SQL Server is published for ARM (`linux/arm64`), and
+  the project's own backend and frontend images were built for `linux/arm64` under emulation on
+  Windows, and the ARM backend started. What was not: a run on a real Apple Silicon Mac. There is
+  a public report from October 2025 that macOS 26 broke this emulation for a SQL Server container. If the
   `sqlserver` container never becomes healthy on such a Mac, that is the likely cause, and the
   project then needs an Intel/AMD machine.
 

@@ -90,6 +90,8 @@ code is in `plans/01-api-contract-and-execution-plan.md`.
 | Two small races: the display clock could briefly jump back under load, and a calendar month computed before a write could be cached as current for a minute | The same audit | Fixed: one immutable clock anchor; the cache stores under the version it read |
 | After a Windows restart the migrator failed with "database already exists": SQL Server answered before it had recovered the database, so the migrations did not see it | The first stack start after the restart | The migrator now waits until an existing database is ONLINE; checked by taking the database offline and starting the migrator |
 | A new day-boundary test was flaky: a shift of exactly 60 minutes sometimes recorded 59.99 on the ticking test clock | Running the test eight times in a row instead of trusting one green run | The test shift is 60.5 minutes; the exact checks (the days add up to the shift) were never affected |
+| A time service answering valid JSON without a time made clock-in fail with 500, without trying the second service | I asked whether a failing time API ends in a well-phrased message; it added a stub mode for that answer and reproduced the 500 before fixing it | Such an answer counts as that provider failing; tests cover both the fallback and the 503 |
+| With the time service down from the start, the dashboard clock and today's summary showed a loading placeholder forever | The same question, checked live in the browser with the services switched off | They show a Hebrew message instead, and the clock retries every minute |
 
 ## What was cut or left unverified
 
