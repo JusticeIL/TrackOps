@@ -62,7 +62,7 @@ function DayShifts({ date }: { date: string }) {
   })
 
   if (day.isError) {
-    return <Notice kind="error">{describeError(day.error)}</Notice>
+    return <Notice>{describeError(day.error)}</Notice>
   }
   if (day.isPending) {
     return <SkeletonRows rows={3} />
@@ -200,7 +200,7 @@ export default function CalendarPage() {
             </span>
           </div>
           {monthData.isError || today.isError ? (
-            <Notice kind="error">{describeError(monthData.error ?? today.error)}</Notice>
+            <Notice>{describeError(monthData.error ?? today.error)}</Notice>
           ) : monthData.isPending ? (
             <SkeletonRows rows={6} />
           ) : (

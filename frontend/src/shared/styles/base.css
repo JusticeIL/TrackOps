@@ -267,8 +267,7 @@ textarea {
   gap: var(--space-1);
 }
 
-.field label,
-.field legend {
+.field label {
   font-size: 0.875rem;
   font-weight: 500;
 }
@@ -342,12 +341,6 @@ textarea {
   background: var(--danger-tint);
   border-color: var(--danger);
   color: var(--danger);
-}
-
-.notice-info {
-  background: var(--accent-tint);
-  border-color: var(--accent-ink);
-  color: var(--ink);
 }
 
 .muted {

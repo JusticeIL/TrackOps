@@ -6,7 +6,7 @@
 const BASE = '/api/v1'
 const SAFE_METHODS = new Set(['GET', 'QUERY'])
 
-export type Method = 'GET' | 'POST' | 'PATCH' | 'DELETE' | 'QUERY'
+type Method = 'GET' | 'POST' | 'PATCH' | 'DELETE' | 'QUERY'
 
 export class ApiError extends Error {
   status: number

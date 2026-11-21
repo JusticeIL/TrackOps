@@ -23,7 +23,7 @@ export default function HistoryPage() {
       <section className="card" aria-label="המשמרות שלי">
         <ShiftFilters idPrefix="history" values={filters} onChange={changeFilters} />
         {result.isError ? (
-          <Notice kind="error">{describeError(result.error)}</Notice>
+          <Notice>{describeError(result.error)}</Notice>
         ) : result.isPending ? (
           <SkeletonRows rows={8} />
         ) : (

@@ -81,7 +81,7 @@ export default function RequestsPage() {
       </div>
       <section className="card" aria-label="הבקשות שלי">
         {own.isError ? (
-          <Notice kind="error">{describeError(own.error)}</Notice>
+          <Notice>{describeError(own.error)}</Notice>
         ) : own.isPending ? (
           <SkeletonRows rows={PAGE_SIZE} />
         ) : (

@@ -2,7 +2,7 @@
  * Sample events for the Events tab. There is no events data in the system yet, so every day
  * shows this same list; it is long enough to show that the list scrolls.
  */
-export interface SampleEvent {
+interface SampleEvent {
   time: string
   title: string
   description: string

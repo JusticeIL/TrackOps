@@ -122,7 +122,7 @@ export function RequestDialog({ kind, onClose }: { kind: RequestFormKind; onClos
           />
         </div>
 
-        {filing.isError && <Notice kind="error">{describeError(filing.error)}</Notice>}
+        {filing.isError && <Notice>{describeError(filing.error)}</Notice>}
 
         <div className="row">
           <button type="submit" className="button button-primary" disabled={filing.isPending || !isValid}>

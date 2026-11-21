@@ -118,7 +118,7 @@ export function CorrectShiftDialog({ shift, onClose }: { shift: Shift; onClose: 
           />
         </div>
         {correction.isError && (
-          <Notice kind="error">
+          <Notice>
             {describeError(correction.error)}
             {fieldErrors.length > 0 && ` (${fieldErrors.join(', ')})`}
           </Notice>

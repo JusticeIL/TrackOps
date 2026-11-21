@@ -12,7 +12,7 @@ export interface WeekDay {
   isToday: boolean
 }
 
-export interface WorkSummary {
+interface WorkSummary {
   /** Worked this month so far. */
   monthMinutes: number
   /** Worked in the same days of the previous month: from the 1st up to today's day number. */
