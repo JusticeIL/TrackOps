@@ -8,12 +8,16 @@ import type { ShiftAction } from './shiftActions'
 
 /** Only this small component re-renders every second; the rest of the dashboard does not. */
 function LiveClock() {
-  const nowMs = useServerNow(1000)
+  const { nowMs, isUnavailable } = useServerNow(1000)
 
   if (nowMs === null) {
     return (
       <div className="clock">
-        <Skeleton width={220} height={56} />
+        {isUnavailable ? (
+          <Notice>השעה משירות הזמן החיצוני אינה זמינה כרגע, ולכן גם לא ניתן לרשום כניסה או יציאה. ננסה שוב בעוד דקה.</Notice>
+        ) : (
+          <Skeleton width={220} height={56} />
+        )}
       </div>
     )
   }

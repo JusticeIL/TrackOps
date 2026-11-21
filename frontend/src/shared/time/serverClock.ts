@@ -36,12 +36,19 @@ async function fetchAnchor(): Promise<ClockAnchor> {
   return { serverMs: Date.parse(time.utc) + (receivedAt - sentAt) / 2, monotonicMs: receivedAt }
 }
 
+interface ServerNow {
+  /** Current server time in milliseconds; null until the first sync. */
+  nowMs: number | null
+  /** True when there is no time yet because the server could not get one from the time service. */
+  isUnavailable: boolean
+}
+
 /**
- * Current server time in milliseconds, re-rendering the caller every `tickMs`.
- * Returns null until the first sync, and stays null if the time service cannot be reached.
+ * Current server time, re-rendering the caller every `tickMs`. If the server cannot reach the
+ * time service, the clock says so (and tries again every minute) instead of loading forever.
  */
-export function useServerNow(tickMs: number): number | null {
-  const { data: anchor } = useQuery({
+export function useServerNow(tickMs: number): ServerNow {
+  const { data: anchor, isError } = useQuery({
     queryKey: CLOCK_KEY,
     queryFn: fetchAnchor,
     refetchInterval: RESYNC_MS,
@@ -54,5 +61,6 @@ export function useServerNow(tickMs: number): number | null {
     return () => clearInterval(timer)
   }, [tickMs])
 
-  return readAnchor(anchor)
+  // After one good sync the clock keeps ticking from it even if a later re-sync fails.
+  return { nowMs: readAnchor(anchor), isUnavailable: isError && !anchor }
 }
