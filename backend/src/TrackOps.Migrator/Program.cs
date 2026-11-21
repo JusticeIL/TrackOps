@@ -47,23 +47,40 @@ public static class Program
 		return exitCode;
 	}
 
+	/// <summary>
+	/// Waits until SQL Server accepts connections and, if the database already exists, until it is
+	/// ONLINE. After an unclean stop SQL Server answers before it has recovered the database; the
+	/// migrations would then not see it and try to create it again ("database already exists").
+	/// </summary>
 	private static async Task waitForServerAsync(string i_AdminConnection)
 	{
-		SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder(i_AdminConnection) { InitialCatalog = "master" };
+		SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder(i_AdminConnection);
+		string database = builder.InitialCatalog;
 		bool isUp = false;
 
+		builder.InitialCatalog = "master";
 		for (int attempt = 1; attempt <= k_MaxAttempts && !isUp; attempt++)
 		{
 			try
 			{
 				await using SqlConnection connection = new SqlConnection(builder.ConnectionString);
+				await using SqlCommand command = new SqlCommand("SELECT state_desc FROM sys.databases WHERE name = @name", connection);
 
+				command.Parameters.AddWithValue("@name", database);
 				await connection.OpenAsync();
-				isUp = true;
+
+				object? state = await command.ExecuteScalarAsync();
+
+				isUp = state == null || (string)state == "ONLINE";
 			}
 			catch (SqlException)
 			{
-				Console.WriteLine($"SQL Server is not ready yet (attempt {attempt}/{k_MaxAttempts})");
+				isUp = false;
+			}
+
+			if (!isUp)
+			{
+				Console.WriteLine($"SQL Server or the {database} database is not ready yet (attempt {attempt}/{k_MaxAttempts})");
 				await Task.Delay(TimeSpan.FromSeconds(k_RetryDelaySeconds));
 			}
 		}
