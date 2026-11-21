@@ -91,8 +91,14 @@ class Client:
 		return twin
 
 
+# Tests that read only the source code; a run of nothing but these needs no stack.
+STATIC_TEST_FILES = {"test_static_clock.py"}
+
+
 @pytest.fixture(scope="session", autouse=True)
-def stack_is_up():
+def stack_is_up(request):
+	if all(item.path.name in STATIC_TEST_FILES for item in request.session.items):
+		return
 	try:
 		requests.get(STUB, timeout=5).raise_for_status()
 		assert requests.get(GATEWAY, timeout=5).status_code == 200
