@@ -41,37 +41,116 @@ API contract: [docs/api/API.md](docs/api/API.md).
 
 ## Run it locally
 
-You need Docker Desktop (with Compose) and nothing else. On Windows use Git Bash or PowerShell.
+### What you need
+
+| For | What | How to check |
+|---|---|---|
+| Running the app | **Docker Desktop** (Windows, macOS) or Docker Engine with the Compose plugin (Linux) | `docker compose version` prints v2.x |
+| | At least 4 GB of memory for Docker (SQL Server alone needs 2 GB), about 4 GB of free disk, and port 8080 free | Docker Desktop → Settings → Resources |
+| | **Internet access.** While building, Docker downloads the base images and the NuGet and npm packages. While running, the API asks two public time services for the time on every clock-in and clock-out, over HTTPS (port 443) | `curl.exe -s "https://timeapi.io/api/timezone/zone?timeZone=Europe/Zurich"` (PowerShell) or `curl -s …` (Git Bash, macOS, Linux) prints JSON |
+| Running the tests (optional) | Python 3.12 or newer | `python --version` |
+| Working on the code (optional) | .NET SDK 11, Visual Studio 2026 18.7 or newer, Node 22 — see "Working on the code" | `dotnet --list-sdks` |
+
+To run the app you do **not** need the .NET SDK, Node or Python: everything is built inside
+Docker. No accounts or API keys are needed either; both time services are free and keyless. Behind
+a company proxy, set the proxy in Docker Desktop (Settings → Resources → Proxies), or the time
+services cannot be reached and clocking in returns an error (see "If something goes wrong").
+
+On Windows the commands below work in PowerShell or Git Bash; where they differ, both are shown.
 On a Mac, read "Windows, macOS and Linux" below first.
 
-**1. Create your `.env`.** It holds every secret; it is gitignored.
+### 1. Create `.env`
 
-```bash
-cp .env.example .env
+`.env` holds every setting and secret. It is gitignored and never committed. The helper
+`tools/make_env.py` copies `.env.example` to `.env` and fills each `CHANGE_ME` with a new random
+value that meets every rule below. It never overwrites an existing `.env`, and it prints the names
+it filled in, not the values. Run it **through Docker**, so Python is not needed:
+
+```powershell
+docker run --rm -v "${PWD}:/app" -w /app python:3.13-alpine python tools/make_env.py
 ```
 
-Open `.env` and replace each `CHANGE_ME`. Generate a value with:
-
 ```bash
-python -c "import secrets; print(secrets.token_urlsafe(48))"
+# Git Bash on Windows
+MSYS_NO_PATHCONV=1 docker run --rm -v "$(pwd -W):/app" -w /app python:3.13-alpine python tools/make_env.py
 ```
 
-- `ACCEPT_EULA=Y` means you accept Microsoft's licence for the SQL Server Developer image.
-- `MSSQL_SA_PASSWORD` and `APP_DB_PASSWORD` must satisfy SQL Server's policy: 8+ characters with
-  upper case, lower case, digits and symbols. Avoid quotes and semicolons.
+```bash
+# macOS and Linux
+docker run --rm -v "$PWD:/app" -w /app --user "$(id -u):$(id -g)" python:3.13-alpine python tools/make_env.py
+```
 
-**2. Start everything.**
+With Python installed, `python tools/make_env.py` does the same.
+
+To fill it in by hand instead, copy the example (`cp .env.example .env`, or `Copy-Item .env.example .env`
+in PowerShell) and replace each `CHANGE_ME`. Every variable:
+
+| Variable | Required | What it is | What to put |
+|---|---|---|---|
+| `ACCEPT_EULA` | yes | Accepts Microsoft's licence for the SQL Server Developer image | `Y` |
+| `MSSQL_SA_PASSWORD` | yes | SQL Server's admin password; used only by the database container and the one-shot migrator | A password you invent (see the rules below) |
+| `APP_DB_LOGIN` | yes | The least-privilege login the API uses; the migrator creates it | Keep `trackops_app` |
+| `APP_DB_PASSWORD` | yes | Password of that login | A password you invent (see the rules below) |
+| `REDIS_PASSWORD` | yes | Password of Redis (sessions, rate limits, cache) | A random value |
+| `JWT_KEY` | yes | Signs the session tokens | A random value of 32+ characters |
+| `CSRF_KEY` | yes | Signs the CSRF tokens | A random value of 32+ characters |
+| `REQUIRE_HTTPS` | yes | `false` locally (plain HTTP); `true` in production, which turns on `Secure` cookies and HSTS | Keep `false` |
+| `HSTS_HEADER_VALUE` | no | The HSTS header, production only | Leave empty |
+| `PUBLIC_ORIGIN` | no | The address you open in the browser; the only origin CORS allows | `http://localhost:8080` |
+| `PUBLIC_PORT` | no | The port on your machine | `8080`; if you change it, change `PUBLIC_ORIGIN` to match |
+| `MANAGER_USERNAME` | no | The one username that signs in as a manager; empty means nobody | Empty (see "Manager access") |
+| `DAILY_TARGET_MINUTES` | no | Daily target; minutes above it are overtime | `480` |
+| `MAX_SHIFT_HOURS` | no | A shift left open longer than this is closed automatically | `16` |
+
+Rules for the values:
+- **The two SQL Server passwords** must satisfy SQL Server's policy, or the database container
+  stops at once: at least 8 characters, with upper case, lower case, digits and a symbol. Use only
+  letters, digits and `- _ . !`.
+- **No value may contain** `$`, quotes, `;` or spaces: they break the compose file or the
+  database connection string.
+- A random value for the keys and the Redis password: `openssl rand -hex 32` (Git Bash, macOS,
+  Linux), or in PowerShell:
+  `$b = New-Object byte[] 32; [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($b); -join ($b | % { $_.ToString('x2') })`
+
+### 2. Start everything
 
 ```bash
 docker compose up -d --build
 ```
 
-The first run downloads the images (SQL Server is about 1.5 GB) and takes a few minutes.
+The first run downloads about 2 GB (SQL Server alone is about 1.5 GB) and builds the API and the
+frontend; allow 5 to 10 minutes. Later starts take seconds. There is no database step: see "The
+database sets itself up" below.
 
-**3. Open <http://localhost:8080>.**
+### 3. Check that it runs
 
-Sign-in is a mock: any username (3–32 letters, digits, `.`, `_`, `-`) and any password of 8+
-characters work. Everyone signs in as an employee.
+```bash
+docker compose ps
+```
+
+`sqlserver` and `redis` should be `healthy`, `migrator` should show `Exited (0)` (it runs once and
+stops), and `backend-1`, `backend-2`, `frontend` and `gateway` should be `Up`.
+
+Then open <http://localhost:8080>. Sign-in is a mock: any username (3–32 letters, digits, `.`, `_`,
+`-`) and any password of 8+ characters work, and everyone signs in as an employee. Press
+**כניסה** on the home screen: the clock-in time comes from the external time service.
+
+### 4. Stop or reset
+
+```bash
+docker compose down        # stops everything; the database is kept
+docker compose down -v     # stops everything and deletes the database
+```
+
+### If something goes wrong
+
+| What you see | Why | What to do |
+|---|---|---|
+| `sqlserver` keeps restarting or is never `healthy` | A SQL Server password breaks the policy, or Docker has less than 2 GB of memory | `docker compose logs sqlserver`; fix the password in `.env` (then `docker compose down -v`, because the first password is stored with the database), or give Docker more memory |
+| `docker compose up` fails with "port is already allocated" | Something else uses port 8080 | Set `PUBLIC_PORT` (for example 8081) and `PUBLIC_ORIGIN=http://localhost:8081` in `.env` |
+| Clocking in shows "שירות הזמן החיצוני אינו זמין" (503 `time_source_unavailable`) | Neither time service could be reached. By design nothing is recorded with another clock | Check the internet connection, proxy or firewall with the `curl` command above, and try again |
+| `docker compose` says a variable is not set | `.env` is missing or a required value is empty | Create it as in step 1 |
+| Scripts on Windows are slow against `localhost` | Windows tries IPv6 first and waits two seconds | Use `127.0.0.1` instead of `localhost` in scripts |
 
 ### Manager access (off by default)
 
@@ -100,7 +179,7 @@ setting and restart to switch it off again; the user's role follows at the next 
   installation.
 - **Events tab** under the calendar: a sample list, the same for every day.
 
-### Demo data (optional)
+### Demo data (optional, needs Python)
 
 A new database is empty, and the application cannot create a shift in the past: the time of every
 recording comes from the external time API. To try the History and Calendar screens with data,
@@ -110,7 +189,8 @@ run this once while the stack is up:
 python tools/seed_demo_data.py
 ```
 
-It gives the employee `demo` six weeks of shifts: ordinary days, overtime, two shifts in one day,
+It needs Python 3.12+ on your machine, because it also runs `docker compose exec`. It gives the
+employee `demo` six weeks of shifts: ordinary days, overtime, two shifts in one day,
 a night shift across midnight, a shift the system closed automatically and one a manager
 corrected. Sign in as `demo` with any password of 8+ characters. The tool needs only Python and
 Docker, can be run again (it replaces its own rows and touches nothing else) and is never run
@@ -215,7 +295,8 @@ the time.
 
 ## Tests
 
-The tests replace the two time APIs with a stub they control, so they can set the clock (for
+The tests are optional for running the app and need **Python 3.12 or newer** (`python --version`;
+on macOS and Linux it may be called `python3`). They replace the two time APIs with a stub they control, so they can set the clock (for
 example to a DST night), slow it down or take it offline. Everything else is the real stack.
 
 ```bash
@@ -248,6 +329,15 @@ TEST_MANAGER_USERNAME= docker compose -f compose.yaml -f infra/compose.test.yaml
 EXPECT_NO_MANAGER=1 tests/.venv/Scripts/python -m pytest tests/test_auth.py -k without_a_configured_manager
 docker compose -f compose.yaml -f infra/compose.test.yaml up -d
 ```
+
+Variables the tests read, all optional:
+
+| Variable | Where | Effect |
+|---|---|---|
+| `TRACKOPS_URL`, `TRACKOPS_STUB_URL`, `TRACKOPS_PUBLIC_ORIGIN` | pytest | Where the gateway and the stub are; defaults `http://127.0.0.1:8080`, `http://127.0.0.1:8090`, `http://localhost:8080` |
+| `TEST_MANAGER_USERNAME` | test overlay | The manager on the test stack; default `admin` |
+| `TEST_SIGN_IN_PER_MINUTE` | test overlay | Sign-in rate limit on the test stack; default very high, because every test signs in |
+| `EXPECT_HTTPS`, `EXPECT_NO_MANAGER` | pytest | Set to `1` to run the two stack-mode tests above |
 
 To return to the normal stack with the real time APIs:
 
@@ -283,10 +373,16 @@ docs/                   API contract and diagram, database diagram, security rep
 
 ## Working on the code
 
-- Backend: open `backend/TrackOps.sln` (needs the .NET 11 SDK; the containers build without it). The code-style settings
-  sit next to the solution and are picked up by the IDE. After a change, rebuild the containers:
+- Backend: needs the **.NET SDK 11.0.100 or a later 11.0 SDK** (`backend/global.json` pins it).
+  Download it from <https://dotnet.microsoft.com/download/dotnet/11.0>; `dotnet --list-sdks` should
+  list an `11.0.x` line. Build with `dotnet build backend/TrackOps.sln`, or open `backend/TrackOps.sln`
+  in **Visual Studio 2026, version 18.7 or newer**, with the "ASP.NET and web development"
+  workload. Visual Studio 2022 cannot open it: the .NET 11 SDK needs Visual Studio's build engine
+  18.7 or newer, and Visual Studio 2022 has 17.14 (its projects then fail to load with
+  `MSB4236: The SDK 'Microsoft.NET.Sdk' specified could not be found`). The code-style settings sit
+  next to the solution and are picked up by the IDE. After a change, rebuild the containers:
   `docker compose up -d --build backend-1 backend-2`.
-- Frontend: `npm --prefix frontend install`, then `npm --prefix frontend run dev`. The dev server
+- Frontend: needs Node 22 and npm. `npm --prefix frontend install`, then `npm --prefix frontend run dev`. The dev server
   proxies `/api` to the running stack.
 - New migration: `dotnet ef migrations add <Name> --project src/TrackOps.Infrastructure --startup-project src/TrackOps.Infrastructure --output-dir Persistence/Migrations` (run in `backend/`).
 
@@ -311,3 +407,12 @@ draw.io -x -f png -s 2 -b 24 -o docs/db/schema.png docs/db/schema.drawio
 ```
 
 (`draw.io` is the draw.io Desktop executable.)
+
+## How this was built with Claude Code
+
+The whole project was built with Claude Code, in plan mode with approval gates before any code.
+- [`CLAUDE.md`](CLAUDE.md): the rules and conventions Claude Code works by in this repository.
+- [`.claude/plans/`](.claude/plans/): the approved plans, the first one written before any code
+  existed.
+- [`.claude/WORKLOG.md`](.claude/WORKLOG.md): where it helped, where I corrected it, where it
+  corrected me, and what it got wrong and fixed.
