@@ -48,13 +48,22 @@ is the design working.
 
 ## 2. Data model
 
-**Stored:** UTC instants only — clock-in, clock-out, each break's start and end. **Never
+**Stored:** UTC instants only — clock-in, clock-out, and the start and end of the shift's break. **Never
 stored:** durations. Shift, break and worked minutes are derived in code and in the reporting
 views `v_ShiftReport` and `v_BreakReport`.
 
 The alternative considered, "clock-in + shift minutes", was rejected: an open shift has no
 minutes yet; breaks and corrections need real instants; DST arithmetic is only right on
 instants; and a stored duration can drift from its endpoints.
+
+**One break per shift.** An employee takes at most one break in a shift. The break stays in its
+own `Breaks` table, in a one-to-zero-or-one relation with its shift, enforced by a unique index on
+`Breaks(ShiftId)`. Two nullable columns on `Shifts` would also hold one break, but the separate
+table keeps the existing check constraint (end after start), the `v_BreakReport` view and the
+recording flow as they were. The API returns the break as `break` (an object, or null until it is
+taken). A second break start is refused with `409 break_already_taken`, and after the break the
+dashboard offers only clock-out. The migration that introduced the rule kept each shift's first
+break in a database that held more.
 
 **A shift holds no free text.** An optional clock-out note existed during the build and was
 removed: the task does not ask for one, and it was one more input to validate, store, search and
@@ -328,6 +337,7 @@ None of them has a sidebar entry, so there are no dead links.
 |---|---|---|
 | ASP.NET's built-in antiforgery | A small HMAC-signed double-submit token | The built-in one needs data-protection keys shared between replicas, which means another package and key storage; 40 lines with one env secret do the same and are easier to explain |
 | .NET 10 LTS | .NET 11 | Decided after the build, to use the framework's own `QUERY` support (section 5). Moving took a retarget, one deprecated EF Core call and a rebuild; all tests pass on it |
+| Any number of breaks per shift, one open at a time (filtered unique index) | One break per shift (unique index on `Breaks(ShiftId)`; the API field `breaks` became `break`) | Decided after the build: a shift should have one break. Like the other invariants, the rule is in the database (section 2) |
 | snake_case column names | EF Core's default PascalCase | Less mapping code; the names in the plan were illustrative |
 | "Background queue for slow jobs" | One hosted job (auto-close and idempotency clean-up) | Nothing else in scope is slow; a general queue would have no user |
 | `GET /time` returns 503 when the source is down | It keeps serving from the last reading plus monotonic time, and returns 503 only if no reading was ever obtained | For display that is still correct, and the clock does not go blank during a short outage |
