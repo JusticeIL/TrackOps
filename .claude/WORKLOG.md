@@ -86,6 +86,8 @@ code is in `plans/01-api-contract-and-execution-plan.md`.
 | A shift split at midnight lost a minute in the Calendar (23:59:30–00:01:00 was 1 minute in History, 0 + 0 per day) | An audit I asked for, of every day switch | Minutes are now split from the shift's cumulative minutes; new tests cover midnight, month ends and when "today" turns |
 | Hidden time-zone paths: a manager's correction without `Z` would have been read in the server's own zone, and the time parser would have done the same with a zone it did not expect | An audit I asked for, of every place that reads a time or a day | Both are refused now; the static clock check also got tighter (per-file allowlists, local-zone getters, Python) |
 | Two small races: the display clock could briefly jump back under load, and a calendar month computed before a write could be cached as current for a minute | The same audit | Fixed: one immutable clock anchor; the cache stores under the version it read |
+| After a Windows restart the migrator failed with "database already exists": SQL Server answered before it had recovered the database, so the migrations did not see it | The first stack start after the restart | The migrator now waits until an existing database is ONLINE; checked by taking the database offline and starting the migrator |
+| A new day-boundary test was flaky: a shift of exactly 60 minutes sometimes recorded 59.99 on the ticking test clock | Running the test eight times in a row instead of trusting one green run | The test shift is 60.5 minutes; the exact checks (the days add up to the shift) were never affected |
 
 ## What was cut or left unverified
 

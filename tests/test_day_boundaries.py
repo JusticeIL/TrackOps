@@ -2,6 +2,8 @@
 
 Zurich is UTC+1 in winter and UTC+2 in summer, so local midnight is 23:00Z or 22:00Z the day before.
 """
+import pytest
+
 from conftest import work_shift
 
 
@@ -40,14 +42,17 @@ def test_a_night_shift_with_a_break_over_midnight_adds_up_to_its_own_minutes(use
 
 	assert first["workedMinutes"] + second["workedMinutes"] == shift["workedMinutes"]
 	assert first["breakMinutes"] + second["breakMinutes"] == shift["breakMinutes"]
-	assert first["workedMinutes"] == 79     # 89.5 minutes on shift before midnight, 10 of them on break
-	assert first["breakMinutes"] == 10
-	assert shift["workedMinutes"] == 210
+	# The sums above are exact. These values are approximate only because the stub clock keeps
+	# ticking, so each recording lands a few milliseconds after the time it was set to.
+	assert first["workedMinutes"] == pytest.approx(79, abs=1)   # 89.5 minutes before midnight, 10 on break
+	assert first["breakMinutes"] == pytest.approx(10, abs=1)
+	assert shift["workedMinutes"] == pytest.approx(210, abs=1)
 
 
 def test_a_shift_across_the_month_boundary_is_split_between_the_months(user, stub):
-	# 30 November 23:30:30 to 1 December 00:30:30 local: exactly one hour.
-	shift = work_shift(user, stub, "2026-11-30T22:30:30Z", "2026-11-30T23:30:30Z")
+	# 30 November 23:30:30 to 1 December 00:31:00 local: 60.5 minutes, so 60 whole minutes even though
+	# the ticking stub records each instant a few milliseconds late.
+	shift = work_shift(user, stub, "2026-11-30T22:30:30Z", "2026-11-30T23:31:00Z")
 	november, december = month_day(user, "2026-11-30"), month_day(user, "2026-12-01")
 
 	assert shift["workedMinutes"] == 60
