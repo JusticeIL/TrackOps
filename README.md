@@ -131,8 +131,11 @@ docker compose ps
 `sqlserver` and `redis` should be `healthy`, `migrator` should show `Exited (0)` (it runs once and
 stops), and `backend-1`, `backend-2`, `frontend` and `gateway` should be `Up`.
 
-Then open <http://localhost:8080>. Sign-in is a mock: any username (3–32 letters, digits, `.`, `_`,
-`-`) and any password of 8+ characters work, and everyone signs in as an employee. Press
+Then open <http://localhost:8080> and sign in. There is no separate sign-up: **the first sign-in
+with a username creates that user, and the password you type then becomes its password.** Any
+username works (3–32 letters, digits, `.`, `_`, `-`; upper and lower case are the same) with any
+password of 8–128 characters. Every later sign-in with that username needs the same password; the
+user's shifts and requests stay with it. Everyone signs in as an employee. Press
 **כניסה** on the home screen: the clock-in time comes from the external time service.
 
 ### 4. Stop or reset
@@ -150,6 +153,7 @@ docker compose down -v     # stops everything and deletes the database
 | `docker compose up` fails with "port is already allocated" | Something else uses port 8080 | Set `PUBLIC_PORT` (for example 8081) and `PUBLIC_ORIGIN=http://localhost:8081` in `.env` |
 | Clocking in shows "שירות הזמן החיצוני אינו זמין" (503 `time_source_unavailable`) | Neither time service could be reached. By design nothing is recorded with another clock | Check the internet connection, proxy or firewall with the `curl` command above, and try again |
 | `docker compose` says a variable is not set | `.env` is missing or a required value is empty | Create it as in step 1 |
+| Sign-in says "שם המשתמש או הסיסמה שגויים" | That username already signed in once, with another password | Use the password from its first sign-in, or another username; `docker compose down -v` starts over with no users |
 | Scripts on Windows are slow against `localhost` | Windows tries IPv6 first and waits two seconds | Use `127.0.0.1` instead of `localhost` in scripts |
 
 ### Manager access (off by default)
@@ -192,7 +196,9 @@ python tools/seed_demo_data.py
 It needs Python 3.12+ on your machine, because it also runs `docker compose exec`. It gives the
 employee `demo` six weeks of shifts: ordinary days, overtime, two shifts in one day,
 a night shift across midnight, a shift the system closed automatically and one a manager
-corrected. Sign in as `demo` with any password of 8+ characters. The tool needs only Python and
+corrected. Sign in as `demo` with the password `demo-password`: the tool signs in `demo` and
+`admin` first, so on a new database that becomes their password (`--password` sets another; if
+`demo` already has a different password, the tool says so and stops). The tool needs only Python and
 Docker, can be run again (it replaces its own rows and touches nothing else) and is never run
 automatically. It writes the rows straight into SQL Server and marks them
 `TimeSource = 'demo-seed'`, so demo rows can always be told apart from real recordings. "Today" is

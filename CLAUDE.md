@@ -19,7 +19,8 @@ Compose. Two API replicas behind nginx. UI in Hebrew (RTL); code, commits and do
    a fallback clock.
 3. **Invariants belong in the database** (unique indexes, check constraints, row locks), never in
    in-memory state. There are two replicas.
-4. **No GitHub work.** No `gh`, no remote, no push, no `.github/` folder, no CI files. Local git only.
+4. **No GitHub tooling.** No `gh`, no `.github/` folder, no CI files. Push only when the owner asks
+   for it, and then never force-push or rewrite pushed history.
 5. **No secrets in the repo.** New settings go in `.env.example` with a placeholder and in the
    table in `docs/SECURITY-REPORT.md`.
 6. **Documentation files are limited to:** `README.md`, `DECISIONS.md`, `CLAUDE.md`,
@@ -144,6 +145,11 @@ In Frontend:
 - Day minutes are split from a shift's cumulative minutes (`WorkCalculator`), so the days of a shift
   add up to its own minutes. Keep it that way; `tests/test_day_boundaries.py` checks midnight,
   month ends and when "today" turns.
+- Passwords: the first sign-in with a username stores its PBKDF2 hash (`IPasswordHasher`,
+  `Infrastructure/Passwords`); later sign-ins must match. The test overlay sets
+  `Auth__PasswordIterations` to 1000; production uses 600,000. Tests all use `conftest.PASSWORD`.
+- Request text goes through `UserText` (NFC, line breaks, control/bidi/zero-width characters
+  refused); `NewEmployeeRequest` refuses unknown fields; enums are read by name only.
 - Correction times must be UTC (`Z`); `EmployeeService` rejects anything else, because a time
   without a zone would be read in the server's own zone.
 - Every endpoint must have a caller in the frontend. Remove an endpoint from all three API copies
