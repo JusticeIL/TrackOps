@@ -3,9 +3,6 @@
 .env.*
 !.env.example
 
-# Local reference material, not part of the repository
-docs/reference/
-
 # .NET
 bin/
 obj/
