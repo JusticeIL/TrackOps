@@ -12,12 +12,15 @@ export class ApiError extends Error {
   status: number
   code: string
   fieldErrors: Record<string, string[]>
+  /** From the Retry-After header, when the server sent one. */
+  retryAfterSeconds: number | null
 
-  constructor(status: number, code: string, title: string, fieldErrors: Record<string, string[]> = {}) {
+  constructor(status: number, code: string, title: string, fieldErrors: Record<string, string[]> = {}, retryAfterSeconds: number | null = null) {
     super(title)
     this.status = status
     this.code = code
     this.fieldErrors = fieldErrors
+    this.retryAfterSeconds = retryAfterSeconds
   }
 }
 
@@ -64,11 +67,13 @@ async function send(method: Method, path: string, options: RequestOptions): Prom
 }
 
 async function toError(response: Response): Promise<ApiError> {
+  const retryAfter = Number(response.headers.get('Retry-After'))
+  const retryAfterSeconds = Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter : null
   try {
     const problem = (await response.json()) as { code?: string; title?: string; errors?: Record<string, string[]> }
-    return new ApiError(response.status, problem.code ?? 'unknown', problem.title ?? response.statusText, problem.errors)
+    return new ApiError(response.status, problem.code ?? 'unknown', problem.title ?? response.statusText, problem.errors, retryAfterSeconds)
   } catch {
-    return new ApiError(response.status, 'unknown', response.statusText)
+    return new ApiError(response.status, 'unknown', response.statusText, {}, retryAfterSeconds)
   }
 }
 
@@ -104,5 +109,10 @@ export function describeError(error: unknown): string {
     invalid_credentials: 'שם המשתמש או הסיסמה שגויים. לשם משתמש שכבר נכנס צריך להזין את הסיסמה מהכניסה הראשונה שלו.',
   }
   const code = error instanceof ApiError ? error.code : ''
+  if (code === 'sign_in_locked' && error instanceof ApiError) {
+    const minutes = Math.max(1, Math.ceil((error.retryAfterSeconds ?? 60) / 60))
+    const wait = minutes === 1 ? 'דקה' : `${minutes} דקות`
+    return `היו יותר מדי ניסיונות עם סיסמה שגויה לשם המשתמש הזה, ולכן הכניסה אליו נחסמה זמנית. נסו שוב בעוד ${wait}.`
+  }
   return messages[code] ?? 'משהו השתבש. נסו שוב.'
 }

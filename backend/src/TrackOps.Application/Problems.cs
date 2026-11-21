@@ -42,6 +42,14 @@ public static class Problems
 		return new AppException(401, "invalid_credentials", "The username or password is incorrect");
 	}
 
+	public static AppException SignInLocked(int i_RetryAfterSeconds)
+	{
+		return new AppException(429, "sign_in_locked", "Too many wrong passwords for this username; try again later")
+		{
+			RetryAfterSeconds = i_RetryAfterSeconds,
+		};
+	}
+
 	public static AppException Forbidden()
 	{
 		return new AppException(403, "forbidden", "This action needs the manager role");

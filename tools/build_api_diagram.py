@@ -34,7 +34,7 @@ API_TREE = folder(
 	folder(
 		"/auth", "HttpOnly · Secure · SameSite cookies + CSRF token",
 		endpoint("GET", "/csrf", "Issue CSRF token (cookie + body)", "Public", "200"),
-		endpoint("POST", "/session", "Sign in · rotate session cookies", "Public", "200 · 400"),
+		endpoint("POST", "/session", "Sign in · rotate session cookies", "Public", "200 · 400 · 401 · 429"),
 		endpoint("GET", "/session", "Current user and role", "Employee", "200 · 401"),
 		endpoint("DELETE", "/session", "Sign out · revoke Redis session", "Employee", "204"),
 	),

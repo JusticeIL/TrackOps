@@ -78,7 +78,12 @@ manager routes answer 403 to every caller (`test_without_a_configured_manager_ev
 
 **Rate limiting.** Counters live in Redis and are incremented by one atomic script, so both
 replicas share them. Limits per minute: sign-in 10 per IP; recording 30, search 60 and everything
-else 240 per user. A rejected request gets `429` and `Retry-After`.
+else 240 per user. A rejected request gets `429` and `Retry-After`. Wrong passwords are counted
+per username as well: 5 within 15 minutes lock that username until they are over (`429
+sign_in_locked`), checked before any password is hashed.
+Tests: `test_a_username_is_locked_after_too_many_wrong_passwords`,
+`test_the_lock_affects_only_that_username_and_ends_by_itself`,
+`test_a_correct_password_clears_earlier_mistakes`.
 
 **Transport.** `Secure` cookies and HSTS are on unless `REQUIRE_HTTPS=false`. The local stack sets
 that because it runs over plain HTTP; `test_https_mode_sets_secure_cookies_and_hsts` checks the
@@ -142,7 +147,7 @@ Logs are structured JSON on standard output. Each security event has a `security
 
 | Event | When |
 |---|---|
-| `sign_in`, `sign_in_rejected` | Successful and rejected sign-ins |
+| `sign_in`, `sign_in_rejected` | Successful and rejected sign-ins; a rejection names its reason (`invalid_credentials`, `sign_in_locked`, `validation_failed`, ...) |
 | `csrf_rejected` | A state-changing request without a valid token |
 | `forbidden` | An authenticated user called a manager route |
 | `rate_limited` | A request over the limit |
@@ -156,8 +161,9 @@ Passwords, tokens and cookies are never logged.
   certificate that is not verified; API to Redis is unencrypted). Acceptable on a private network
   on one host; not for a multi-host deployment.
 - No container image scanning, no web application firewall, no penetration test.
-- No account lockout or multi-factor authentication, and no password change or reset; the sign-in
-  rate limit (10 per minute per address) is the guard against guessing.
+- No multi-factor authentication, and no password change or reset. Guessing is limited per address
+  (10 sign-ins a minute) and per username (5 wrong passwords per 15 minutes); the per-username lock
+  can be triggered by anyone who knows the username.
 - Secrets are static values in `.env`; there is no secret manager and no rotation.
 - The nginx master process runs as root inside its container (workers do not); the API and the
   migrator run as a non-root user.
