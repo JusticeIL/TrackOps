@@ -29,7 +29,7 @@ What was checked, what was found and fixed, and what proves it. "Test" names a p
 
 | # | Finding | Fix |
 |---|---|---|
-| 1 | The generated migration had no "one open break per shift" unique index. EF Core had merged it with the plain index on the same column, so the invariant would have been enforced only in code | Both indexes were given explicit names; the migration was regenerated and checked. `test_concurrent_break_starts_open_exactly_one_break` covers it |
+| 1 | The generated migration had no "one open break per shift" unique index. EF Core had merged it with the plain index on the same column, so the invariant would have been enforced only in code | Both indexes were given explicit names; the migration was regenerated and checked. `test_concurrent_break_starts_open_exactly_one_break` covers it. Later a shift was limited to one break, and both became a single unique index on `Breaks(ShiftId)` |
 | 2 | `X-Forwarded-For` could be supplied by the client and would have decided the rate-limit key for sign-in | The gateway overwrites the header with the real peer address instead of appending to it |
 | 3 | nginx drops inherited `add_header` lines in any location that declares its own, which silently removes security headers | Page headers are included explicitly in the page location; the API sets its own headers in middleware, so they do not depend on nginx at all |
 | 4 | After a container was rebuilt, the gateway kept its old address and requests failed | The gateway now re-resolves container names through Docker's DNS every few seconds |
