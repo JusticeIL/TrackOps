@@ -184,7 +184,7 @@ public class ShiftRecordingService
 				});
 				await r_Db.SaveChangesAsync(i_CancellationToken);
 				await transaction.CommitAsync(i_CancellationToken);
-				result = new RecordingResult { StatusCode = i_SuccessStatus, Json = json, ShiftId = shift.Id };
+				result = new RecordingResult { StatusCode = i_SuccessStatus, Json = json };
 			}
 			catch (DbUpdateException exception) when (isDuplicateRecording(exception))
 			{

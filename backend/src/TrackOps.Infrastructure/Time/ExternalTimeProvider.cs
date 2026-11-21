@@ -70,7 +70,7 @@ public class ExternalTimeProvider : ITimeProvider
 			response.EnsureSuccessStatusCode();
 
 			string body = await response.Content.ReadAsStringAsync(i_CancellationToken);
-			DateTime utc = truncateToMilliseconds(i_Parse(body));
+			DateTime utc = Instants.TruncateToMilliseconds(i_Parse(body));
 
 			if (utc.Year < k_EarliestPlausibleYear || utc.Year > k_LatestPlausibleYear)
 			{
@@ -98,11 +98,6 @@ public class ExternalTimeProvider : ITimeProvider
 			|| i_Exception is KeyNotFoundException
 			|| i_Exception is InvalidOperationException;
 	}
-
-	private static DateTime truncateToMilliseconds(DateTime i_Utc)
-	{
-		return new DateTime(i_Utc.Ticks - (i_Utc.Ticks % TimeSpan.TicksPerMillisecond), DateTimeKind.Utc);
-	}
 }
 
 /// <summary>Turns each provider's JSON into a UTC instant. Both must report Europe/Zurich.</summary>
@@ -116,8 +111,15 @@ public static class TimeApiParsers
 
 		ensureZone(root.GetProperty("timeZone").GetString());
 
-		DateTime local = DateTime.Parse(root.GetProperty("currentLocalTime").GetString()!, CultureInfo.InvariantCulture, DateTimeStyles.None);
+		// RoundtripKind keeps a zone marker if the provider ever sends one, instead of converting the
+		// value into this server's own time zone. A wall time must carry no zone; anything else is a fault.
+		DateTime local = DateTime.Parse(root.GetProperty("currentLocalTime").GetString()!, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
 		int offsetSeconds = root.GetProperty("currentUtcOffset").GetProperty("seconds").GetInt32();
+
+		if (local.Kind != DateTimeKind.Unspecified)
+		{
+			throw new FormatException("currentLocalTime must be a wall time without a zone");
+		}
 
 		return DateTime.SpecifyKind(local.AddSeconds(-offsetSeconds), DateTimeKind.Utc);
 	}

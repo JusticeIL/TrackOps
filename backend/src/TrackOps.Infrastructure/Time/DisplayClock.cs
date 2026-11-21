@@ -16,8 +16,10 @@ public class DisplayClock : IDisplayClock
 	private readonly TimeApiOptions r_Options;
 	private readonly ILogger<DisplayClock> r_Logger;
 	private readonly SemaphoreSlim r_RefreshLock = new SemaphoreSlim(1, 1);
-	private TimeReading? m_Anchor;
-	private long m_AnchorTimestamp;
+
+	// The reading and the moment it was taken are one object, replaced in a single assignment.
+	// A reader therefore never pairs a new reading with an old timestamp ("now" jumping back).
+	private volatile Anchor? m_Anchor;
 
 	public DisplayClock(ITimeProvider i_TimeProvider, TimeApiOptions i_Options, ILogger<DisplayClock> i_Logger)
 	{
@@ -31,7 +33,9 @@ public class DisplayClock : IDisplayClock
 		await r_RefreshLock.WaitAsync(i_CancellationToken);
 		try
 		{
-			if (m_Anchor == null || Stopwatch.GetElapsedTime(m_AnchorTimestamp).TotalSeconds >= r_Options.DisplayMaxAgeSeconds)
+			Anchor? current = m_Anchor;
+
+			if (current == null || Stopwatch.GetElapsedTime(current.Timestamp).TotalSeconds >= r_Options.DisplayMaxAgeSeconds)
 			{
 				await refreshAsync(i_CancellationToken);
 			}
@@ -41,7 +45,9 @@ public class DisplayClock : IDisplayClock
 			r_RefreshLock.Release();
 		}
 
-		return new TimeReading { Utc = m_Anchor!.Utc + Stopwatch.GetElapsedTime(m_AnchorTimestamp), Source = m_Anchor.Source };
+		Anchor anchor = m_Anchor!;
+
+		return new TimeReading { Utc = anchor.Reading.Utc + Stopwatch.GetElapsedTime(anchor.Timestamp), Source = anchor.Reading.Source };
 	}
 
 	private async Task refreshAsync(CancellationToken i_CancellationToken)
@@ -50,14 +56,21 @@ public class DisplayClock : IDisplayClock
 		{
 			TimeReading reading = await r_TimeProvider.GetUtcNowAsync(i_CancellationToken);
 
-			m_AnchorTimestamp = Stopwatch.GetTimestamp();
-			m_Anchor = reading;
+			m_Anchor = new Anchor { Reading = reading, Timestamp = Stopwatch.GetTimestamp() };
 		}
 		catch (AppException) when (m_Anchor != null)
 		{
 			// The old anchor plus monotonic time is still correct, so display keeps working.
 			r_Logger.LogWarning("Display clock could not refresh its anchor; continuing from the previous reading");
 		}
+	}
+
+	/// <summary>One external reading and the Stopwatch timestamp at which it was taken.</summary>
+	private class Anchor
+	{
+		public TimeReading Reading { get; init; } = new TimeReading();
+
+		public long Timestamp { get; init; }
 	}
 }
 

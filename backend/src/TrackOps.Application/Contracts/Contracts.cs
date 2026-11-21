@@ -139,8 +139,6 @@ public class ActivityItemDto
 	public eActivityType Type { get; set; }
 
 	public DateTime AtUtc { get; set; }
-
-	public long ShiftId { get; set; }
 }
 
 public class TimeDto
@@ -150,8 +148,6 @@ public class TimeDto
 	public string Zone { get; set; } = string.Empty;
 
 	public int OffsetSeconds { get; set; }
-
-	public string Source { get; set; } = string.Empty;
 }
 
 public class DaySummaryDto
@@ -172,10 +168,6 @@ public class MonthTotalsDto
 	public int WorkedMinutes { get; set; }
 
 	public int OvertimeMinutes { get; set; }
-
-	public int DaysWorked { get; set; }
-
-	public int AverageDailyOvertimeMinutes { get; set; }
 }
 
 public class CalendarMonthDto
@@ -231,8 +223,6 @@ public class RecordingResult
 	public int StatusCode { get; set; }
 
 	public string Json { get; set; } = string.Empty;
-
-	public long ShiftId { get; set; }
 
 	public bool IsReplay { get; set; }
 }

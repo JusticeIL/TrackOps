@@ -96,6 +96,8 @@ def test_correction_with_a_stale_row_version_is_rejected(manager, stub):
 	({"clockInUtc": "2026-11-17T12:00:00Z"}, "breaks"),            # would cut off the break
 	({"clockOutUtc": "2026-11-17T16:00:00Z", "reason": "x"}, "reason"),
 	({"reason": "no times given"}, "clockInUtc"),
+	({"clockOutUtc": "2026-11-17T16:00:00"}, "clockOutUtc"),        # no zone: would be read in the server's zone
+	({"clockOutUtc": "2026-11-17T17:00:00+01:00"}, "clockOutUtc"),  # an offset instead of Z
 ])
 def test_invalid_corrections_are_rejected(manager, stub, change, field):
 	employee = Client()
@@ -144,7 +146,7 @@ def test_forgotten_clock_out_is_closed_automatically_and_audited(manager, stub):
 	deadline = time.monotonic() + 30
 	while employee.get("/shifts/current").status_code != 204 and time.monotonic() < deadline:
 		time.sleep(1)
-	closed = employee.get(f"/shifts/{shift['id']}").json()
+	closed = employee.query("/shifts").json()["items"][0]
 	audit = manager.get(f"/employees/{shift['userId']}/shifts/{shift['id']}/audit").json()["items"]
 
 	assert closed["status"] == "AutoClosed"
