@@ -97,6 +97,12 @@ separate one-shot `migrator` container, so the two replicas never race on migrat
 - A day is a Europe/Zurich local day: from one local midnight to the next.
 - Worked time of a day = the part of each shift inside that day, minus the breaks inside it. A
   shift crossing midnight is split between the two days.
+- Minutes are whole numbers, and a split must not lose one. Flooring each day separately would:
+  23:59:30–00:01:00 is one minute, but 0 + 0 per day. So a shift's minutes are counted from its
+  start up to each midnight and floored once, and a day gets the difference. The days of a shift
+  always add up to exactly the minutes History shows for it (`tests/test_day_boundaries.py`).
+- A day window is `[local midnight, next local midnight)`: a shift ending exactly at midnight does
+  not touch the next day, and "today" turns at 00:00 Zurich time, in winter and in summer.
 - Daily overtime = `max(0, worked − target)`. A short day counts zero; it does not cancel another
   day's overtime.
 - Monthly overtime = the sum of the days. Overtime is shown on the Calendar, per day and per
@@ -123,7 +129,7 @@ limits, and time-of-day premiums.
 | Concurrent clock-out and break start | Both lock the shift row; the second one re-checks and fails cleanly |
 | Forgotten clock-out | A background job closes shifts open longer than `MAX_SHIFT_HOURS` (16) at clock-in + maximum, marks them `AutoClosed`, writes an audit row. A manager corrects the time. A short-lived Redis lock stops two replicas from running a round at the same moment |
 | Time API down while the job runs | The round is skipped; the job fails closed too |
-| Shift crossing midnight | One shift; hours split per local day |
+| Shift crossing midnight or a month end | One shift; minutes split per local day without losing or doubling a minute |
 | DST transitions | Covered above; tested for both 2027 transitions |
 | Manager edits a shift someone else just changed | The row version in the request is compared under lock: `409 stale_version` |
 | Correction that would cut off a break, overlap another shift, or lie in the future | `400` / `409 shift_overlap` |
@@ -161,7 +167,9 @@ limits, and time-of-day premiums.
   release, with no patch yet, when this was built. For a product meant to run for years the LTS
   line (.NET 10) with the verb mapped as a string would be the conservative choice.
 - `PUT` is not used; no endpoint was invented to use it.
-- Another user's shift returns `404`, not `403`, so ids cannot be probed.
+- A shift id that does not belong to the employee in the path returns `404`, not `403`, so ids cannot be probed.
+- Every endpoint has a caller in the app. A `GET /shifts/{id}` existed and was removed: the app never
+  asked for one shift on its own, and the history search already returns full shifts.
 
 ## 6. Authentication (mock, on purpose)
 
@@ -322,6 +330,10 @@ None of them has a sidebar entry, so there are no dead links.
 - No POST fallback for `QUERY` (section 5).
 - In the hour that repeats when DST ends, a manager typing a wall-clock time gets the earlier of
   the two instants.
+- An open Calendar or Forms and data screen keeps showing yesterday as "today" after Zurich midnight
+  until it is reloaded or a query refreshes; the dashboard refreshes every minute while a shift is open.
+- The solution needs Visual Studio 2026 (18.7 or newer) or the `dotnet` command line. Visual
+  Studio 2022 cannot load .NET 11 projects.
 - Auto-close sets clock-out to clock-in + maximum. That value is derived, not read from the time
   API; the shift is flagged `AutoClosed` and audited so it is never mistaken for a recording.
 - Failed recordings are not stored for idempotent replay; a retry after a 409 or 503 is evaluated
