@@ -87,9 +87,15 @@ public class ExternalTimeProvider : ITimeProvider
 		return reading;
 	}
 
+	/// <summary>
+	/// Anything a provider can do wrong: unreachable, slow, broken circuit, or an answer that cannot
+	/// be read (invalid JSON, a missing or null field, a value out of range). Each of these sends the
+	/// request to the next provider; when none is left, the caller gets 503, never 500.
+	/// </summary>
 	private static bool isProviderFailure(Exception i_Exception)
 	{
 		return i_Exception is HttpRequestException
+			|| i_Exception is ArgumentException
 			|| i_Exception is TaskCanceledException
 			|| i_Exception is TimeoutRejectedException
 			|| i_Exception is BrokenCircuitException

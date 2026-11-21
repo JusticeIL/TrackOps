@@ -45,6 +45,26 @@ def test_invalid_answers_are_not_trusted(user, stub):
 	assert user.clock_in().status_code == 503
 
 
+def test_an_answer_without_a_time_fails_closed_with_503_not_500(user, stub):
+	stub.mode("empty", "empty")
+
+	response = user.clock_in()
+
+	assert response.status_code == 503
+	assert response.json()["code"] == "time_source_unavailable"
+	assert "Retry-After" in response.headers
+
+
+def test_an_answer_without_a_time_falls_back_to_the_second_provider(user, stub):
+	stub.set("2026-11-17T07:00:00Z")
+	stub.mode("empty", "ok")
+
+	response = user.clock_in()
+
+	assert response.status_code == 201
+	assert response.json()["clockInUtc"].startswith("2026-11-17T07:00:0")
+
+
 def test_secondary_provider_is_used_when_the_primary_is_down(user, stub):
 	stub.set("2026-11-17T07:00:00Z")
 	stub.mode("down", "ok")
