@@ -90,7 +90,7 @@ export async function api<T>(method: Method, path: string, options: RequestOptio
 /** Hebrew message for an error the user can act on. */
 export function describeError(error: unknown): string {
   const messages: Record<string, string> = {
-    time_source_unavailable: 'שירות הזמן החיצוני אינו זמין כרגע, ולכן הפעולה לא נרשמה. נסו שוב בעוד רגע.',
+    time_source_unavailable: 'שירות הזמן החיצוני אינו זמין כרגע, ולכן שום דבר לא נרשם. נסו שוב בעוד רגע.',
     shift_already_open: 'כבר קיימת משמרת פתוחה.',
     no_open_shift: 'אין משמרת פתוחה.',
     break_already_open: 'כבר קיימת הפסקה פתוחה.',

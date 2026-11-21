@@ -37,8 +37,8 @@ export default function DashboardPage() {
       </div>
       <div className="dashboard-grid">
         <ClockCard shift={currentShift.data ?? null} isLoading={currentShift.isPending} />
-        <TodaySummaryCard day={today.data} status={status} isLoading={today.isPending} />
-        <ActivityCard items={activity.data?.items} isLoading={activity.isPending} />
+        <TodaySummaryCard day={today.data} status={status} error={today.error} />
+        <ActivityCard items={activity.data?.items} error={activity.error} />
       </div>
     </>
   )

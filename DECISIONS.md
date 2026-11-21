@@ -136,7 +136,8 @@ limits, and time-of-day premiums.
 | Two first sign-ins of one username at once | Unique index on the username; the loser re-reads the row and must match the winner's password |
 | A request's text holds control, bidi-override or zero-width characters | Refused (400): they can make stored text display as something else. Text is normalised to Unicode NFC and one kind of line break; fields the server owns, and enum numbers, are refused |
 | Session ended (signed out elsewhere, expired) | Next request returns 401 and the app returns to sign-in |
-| Time API returns nonsense (bad JSON, wrong zone, absurd year) | Treated as a failure of that provider |
+| Time API returns nonsense (bad JSON, wrong zone, absurd year, a missing or null time) | Treated as a failure of that provider: the next one is asked, and with none left the answer is `503`, never `500` |
+| The time service is down when a page opens | Every screen says so in Hebrew instead of loading forever: the dashboard clock explains that clocking in and out is not possible right now and retries every minute; other cards show the error of their own request |
 
 ## 5. API
 

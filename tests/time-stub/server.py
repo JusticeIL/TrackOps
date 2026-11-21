@@ -7,7 +7,8 @@ backend's real client code is exercised. Tests control it through /control:
     POST /control {"primary": "down", "secondary": "slow"} set each provider's behaviour
     GET  /control                                           read the current state
 
-Behaviours: "ok", "down" (HTTP 500), "slow" (answers after `slowSeconds`), "garbage" (invalid JSON).
+Behaviours: "ok", "down" (HTTP 500), "slow" (answers after `slowSeconds`), "garbage" (invalid JSON),
+"empty" (valid JSON with the time set to null).
 The stub's own clock is monotonic: a set time plus elapsed time since it was set.
 """
 import json
@@ -70,6 +71,10 @@ class Handler(BaseHTTPRequestHandler):
 			self._send(500, {"error": "stub is down"})
 		elif mode == "garbage":
 			self._send(200, b"<html>not json</html>")
+		elif mode == "empty":
+			# Valid JSON for the right zone, but the time itself is missing.
+			body = body_factory()
+			self._send(200, {key: (None if key in ("currentLocalTime", "utc_datetime") else value) for key, value in body.items()})
 		else:
 			self._send(200, body_factory())
 
