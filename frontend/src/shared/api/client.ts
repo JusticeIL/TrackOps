@@ -101,6 +101,7 @@ export function describeError(error: unknown): string {
     validation_failed: 'הנתונים שהוזנו אינם תקינים.',
     forbidden: 'הפעולה מותרת למנהלים בלבד.',
     unauthenticated: 'יש להתחבר מחדש.',
+    invalid_credentials: 'שם המשתמש או הסיסמה שגויים. לשם משתמש שכבר נכנס צריך להזין את הסיסמה מהכניסה הראשונה שלו.',
   }
   const code = error instanceof ApiError ? error.code : ''
   return messages[code] ?? 'משהו השתבש. נסו שוב.'

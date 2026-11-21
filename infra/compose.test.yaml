@@ -19,6 +19,9 @@ x-test-env: &test-env
   # The tests cover the manager routes, so the test stack has a manager. Start it with
   # TEST_MANAGER_USERNAME= (empty) to test the default, where nobody is a manager.
   Auth__ManagerUsername: ${TEST_MANAGER_USERNAME-admin}
+  # The suite signs in a few hundred new users; at the production count (600,000 PBKDF2
+  # iterations) that alone would add minutes. Checking a stored hash uses the count inside it.
+  Auth__PasswordIterations: "1000"
   # Long enough for a 25 h DST-day shift; the auto-close test jumps 31 h.
   WorkRules__MaxShiftHours: "30"
 

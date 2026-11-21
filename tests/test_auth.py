@@ -1,5 +1,7 @@
-"""Sign-in, session cookies, rotation and revocation."""
+"""Sign-in, session cookies, rotation and revocation, and the password set at a username's first sign-in."""
 import os
+import uuid
+from concurrent.futures import ThreadPoolExecutor
 
 import pytest
 import requests
@@ -96,3 +98,68 @@ def test_tampered_jwt_is_rejected(user):
 	cookies["trackops_jwt"] = cookies["trackops_jwt"][:-4] + "AAAA"
 
 	assert requests.get(f"{BASE}/auth/session", cookies=cookies, timeout=TIMEOUT).status_code == 401
+
+
+# ---------- The first sign-in sets the password ----------
+
+def new_username():
+	return "p" + uuid.uuid4().hex[:14]
+
+
+def sign_in_as(username, password):
+	"""One sign-in attempt in a fresh browser session; returns the client and the response."""
+	client = Client(username, sign_in=False)
+	client.refresh_csrf()
+	response = client.http.post(f"{BASE}/auth/session", json={"username": username, "password": password}, timeout=TIMEOUT)
+	return client, response
+
+
+def test_the_password_of_the_first_sign_in_is_required_afterwards(stub):
+	username = new_username()
+
+	_, first = sign_in_as(username, "first-password")
+	_, again = sign_in_as(username, "first-password")
+	_, wrong = sign_in_as(username, "another-password")
+	_, other_case = sign_in_as(username.upper(), "first-password")   # usernames ignore case
+
+	assert first.status_code == 200
+	assert again.status_code == 200
+	assert again.json()["id"] == first.json()["id"]
+	assert wrong.status_code == 401
+	assert wrong.json()["code"] == "invalid_credentials"
+	assert "trackops_sid" not in wrong.headers.get("Set-Cookie", ""), "a refused sign-in opens no session"
+	assert other_case.status_code == 200
+
+
+def test_a_users_data_stays_with_the_username(stub):
+	first_visit = Client()
+	first_visit.request("POST", "/requests", json={"type": "Other", "title": "Kept across sign-ins", "content": "Still here."})
+
+	later_visit = Client(first_visit.username)   # another browser, the same username and password
+
+	assert [item["title"] for item in later_visit.get("/requests").json()["items"]] == ["Kept across sign-ins"]
+
+
+def test_simultaneous_first_sign_ins_let_exactly_one_password_in(stub):
+	# Ten browsers claim one new username at once, each with its own password. The database keeps
+	# one user; the other nine are checked against the winner's password and refused.
+	username = new_username()
+	passwords = [f"password-{index:02d}" for index in range(10)]
+
+	with ThreadPoolExecutor(max_workers=len(passwords)) as pool:
+		codes = list(pool.map(lambda password: sign_in_as(username, password)[1].status_code, passwords))
+
+	assert codes.count(200) == 1, codes
+	assert codes.count(401) == len(passwords) - 1, codes
+
+
+def test_the_password_is_never_sent_back(stub):
+	client, response = sign_in_as(new_username(), "secret-password-123")
+	session = client.get("/auth/session")
+
+	assert response.status_code == 200
+	for body in (response.text, session.text):
+		assert "secret-password-123" not in body
+		assert "pbkdf2" not in body.lower()
+		assert "passwordhash" not in body.lower()
+

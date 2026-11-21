@@ -45,7 +45,8 @@ export default function SignInPage() {
             required
           />
           <span id="username-hint" className="muted">
-            3–32 תווים באנגלית, ספרות, נקודה, מקף או קו תחתון.
+            3–32 תווים באנגלית, ספרות, נקודה, מקף או קו תחתון. בכניסה הראשונה עם שם משתמש, הסיסמה שתזינו נשמרת
+            לו; בכניסות הבאות צריך להזין את אותה סיסמה.
           </span>
           {fieldErrors.username && <span className="field-error">שם המשתמש אינו תקין.</span>}
         </div>
