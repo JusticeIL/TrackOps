@@ -27,7 +27,7 @@ export const ShiftTable = memo(function ShiftTable({ shifts, caption, showEmploy
             <th scope="col">תאריך</th>
             <th scope="col">כניסה</th>
             <th scope="col">יציאה</th>
-            <th scope="col">הפסקות</th>
+            <th scope="col">הפסקה</th>
             <th scope="col">שעות עבודה</th>
             <th scope="col">סטטוס</th>
             {renderActions && <th scope="col">פעולות</th>}
@@ -41,7 +41,7 @@ export const ShiftTable = memo(function ShiftTable({ shifts, caption, showEmploy
               <td className="latin">{formatTime(shift.clockInUtc)}</td>
               <td className="latin">{shift.clockOutUtc ? formatTime(shift.clockOutUtc) : '—'}</td>
               <td className="latin">
-                {shift.breaks.length === 0 ? '—' : `${shift.breaks.length} · ${formatMinutes(shift.breakMinutes)}`}
+                {shift.break === null ? '—' : formatMinutes(shift.breakMinutes)}
               </td>
               <td className="latin">{formatMinutes(shift.workedMinutes)}</td>
               <td>

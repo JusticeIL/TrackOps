@@ -1,6 +1,6 @@
 # TrackOps — shift clock (שעון נוכחות)
 
-Employees clock in and out of shifts, take breaks, and see their hours and overtime. A manager
+Employees clock in and out of shifts, take one break per shift, and see their hours and overtime. A manager
 role (everyone's shifts, corrections with an audit trail) is built in and switched off by default.
 
 **The one hard rule:** every recorded timestamp comes from an external time API for

@@ -16,7 +16,7 @@ partial class AppDbContextModelSnapshot : ModelSnapshot
     // If you encounter a merge conflict in the line below, it means you need to
     // discard one of the migration branches and recreate its migrations on top of
     // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-    public override string LastMigrationId => "20261121215043_AddUserPasswordHash";
+    public override string LastMigrationId => "20261121233040_OneBreakPerShift";
 
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
@@ -48,11 +48,8 @@ partial class AppDbContextModelSnapshot : ModelSnapshot
 
                 b.HasKey("Id");
 
-                b.HasIndex(new[] { "ShiftId" }, "IX_Breaks_Shift");
-
-                b.HasIndex(new[] { "ShiftId" }, "UX_Breaks_OneOpenPerShift")
-                    .IsUnique()
-                    .HasFilter("[EndUtc] IS NULL");
+                b.HasIndex(new[] { "ShiftId" }, "UX_Breaks_OnePerShift")
+                    .IsUnique();
 
                 b.ToTable("Breaks", t =>
                     {
@@ -294,8 +291,8 @@ partial class AppDbContextModelSnapshot : ModelSnapshot
         modelBuilder.Entity("TrackOps.Domain.Entities.Break", b =>
             {
                 b.HasOne("TrackOps.Domain.Entities.Shift", "Shift")
-                    .WithMany("Breaks")
-                    .HasForeignKey("ShiftId")
+                    .WithOne("Break")
+                    .HasForeignKey("TrackOps.Domain.Entities.Break", "ShiftId")
                     .OnDelete(DeleteBehavior.Cascade)
                     .IsRequired();
 
@@ -342,7 +339,7 @@ partial class AppDbContextModelSnapshot : ModelSnapshot
 
         modelBuilder.Entity("TrackOps.Domain.Entities.Shift", b =>
             {
-                b.Navigation("Breaks");
+                b.Navigation("Break");
             });
 #pragma warning restore 612, 618
     }

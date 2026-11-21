@@ -37,7 +37,10 @@ function LiveClock() {
 export function ClockCard({ shift, isLoading }: { shift: Shift | null; isLoading: boolean }) {
   const action = useShiftAction()
   const readDisplayNow = useServerNowReader()
-  const openBreak = shift?.breaks.find((pause) => pause.endUtc === null)
+  const pause = shift?.break ?? null
+  const isOnBreak = pause !== null && pause.endUtc === null
+  // One break per shift: once it has ended, clock-out is the only action left.
+  const hadBreak = pause !== null && pause.endUtc !== null
 
   function run(next: ShiftAction) {
     action.mutate({ action: next, idempotencyKey: crypto.randomUUID(), displayNowMs: readDisplayNow() })
@@ -50,11 +53,24 @@ export function ClockCard({ shift, isLoading }: { shift: Shift | null; isLoading
 
       {isLoading ? (
         <Skeleton height={56} />
+      ) : shift && hadBreak ? (
+        <div className="stack">
+          <p className="muted">
+            במשמרת מאז <span className="latin">{formatTime(shift.clockInUtc)}</span> · ההפסקה של המשמרת נוצלה (
+            <span className="latin">
+              {formatTime(pause.startUtc)}–{formatTime(pause.endUtc ?? pause.startUtc)}
+            </span>
+            )
+          </p>
+          <button type="button" className="button button-dark button-large" disabled={action.isPending} onClick={() => run('clockOut')}>
+            יציאה
+          </button>
+        </div>
       ) : shift ? (
         <div className="stack">
           <p className="muted">
-            {openBreak ? 'בהפסקה מאז ' : 'במשמרת מאז '}
-            <span className="latin">{formatTime(openBreak ? openBreak.startUtc : shift.clockInUtc)}</span>
+            {isOnBreak ? 'בהפסקה מאז ' : 'במשמרת מאז '}
+            <span className="latin">{formatTime(isOnBreak ? pause.startUtc : shift.clockInUtc)}</span>
           </p>
           <div className="clock-actions">
             <button type="button" className="button button-dark button-large" disabled={action.isPending} onClick={() => run('clockOut')}>
@@ -64,9 +80,9 @@ export function ClockCard({ shift, isLoading }: { shift: Shift | null; isLoading
               type="button"
               className="button button-large"
               disabled={action.isPending}
-              onClick={() => run(openBreak ? 'breakEnd' : 'breakStart')}
+              onClick={() => run(isOnBreak ? 'breakEnd' : 'breakStart')}
             >
-              {openBreak ? 'סיום הפסקה' : 'התחלת הפסקה'}
+              {isOnBreak ? 'סיום הפסקה' : 'התחלת הפסקה'}
             </button>
           </div>
         </div>

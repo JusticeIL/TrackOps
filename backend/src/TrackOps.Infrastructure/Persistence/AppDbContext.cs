@@ -49,7 +49,7 @@ public class AppDbContext : DbContext, IAppDbContext
 	{
 		return Shifts
 			.FromSql($"SELECT * FROM Shifts WITH (UPDLOCK, ROWLOCK) WHERE UserId = {i_UserId} AND ClockOutUtc IS NULL")
-			.Include(shift => shift.Breaks)
+			.Include(shift => shift.Break)
 			.FirstOrDefaultAsync(i_CancellationToken);
 	}
 
@@ -57,7 +57,7 @@ public class AppDbContext : DbContext, IAppDbContext
 	{
 		return Shifts
 			.FromSql($"SELECT * FROM Shifts WITH (UPDLOCK, ROWLOCK) WHERE Id = {i_ShiftId} AND UserId = {i_UserId}")
-			.Include(shift => shift.Breaks)
+			.Include(shift => shift.Break)
 			.FirstOrDefaultAsync(i_CancellationToken);
 	}
 
@@ -99,10 +99,9 @@ public class AppDbContext : DbContext, IAppDbContext
 
 		i_Builder.Entity<Break>(pause =>
 		{
-			pause.HasOne(entity => entity.Shift).WithMany(shift => shift.Breaks).HasForeignKey(entity => entity.ShiftId).OnDelete(DeleteBehavior.Cascade);
-			// Two indexes on the same column need explicit names, or EF treats them as one.
-			pause.HasIndex(entity => entity.ShiftId, DbNames.k_OneOpenBreakIndex).IsUnique().HasFilter("[EndUtc] IS NULL");
-			pause.HasIndex(entity => entity.ShiftId, "IX_Breaks_Shift");
+			// One break per shift: a one-to-one relation whose unique index also serves the foreign key.
+			pause.HasOne(entity => entity.Shift).WithOne(shift => shift.Break).HasForeignKey<Break>(entity => entity.ShiftId).OnDelete(DeleteBehavior.Cascade);
+			pause.HasIndex(entity => entity.ShiftId, DbNames.k_OneBreakPerShiftIndex).IsUnique();
 			pause.ToTable(table => table.HasCheckConstraint("CK_Breaks_EndAfterStart", "[EndUtc] IS NULL OR [EndUtc] > [StartUtc]"));
 		});
 

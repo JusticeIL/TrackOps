@@ -93,7 +93,7 @@ def test_correction_with_a_stale_row_version_is_rejected(manager, stub):
 @pytest.mark.parametrize("change, field", [
 	({"clockOutUtc": "2026-11-17T06:00:00Z"}, "clockOutUtc"),      # before clock-in
 	({"clockOutUtc": "2030-01-01T00:00:00Z"}, "clockOutUtc"),      # in the future
-	({"clockInUtc": "2026-11-17T12:00:00Z"}, "breaks"),            # would cut off the break
+	({"clockInUtc": "2026-11-17T12:00:00Z"}, "break"),             # would cut off the break
 	({"clockOutUtc": "2026-11-17T16:00:00Z", "reason": "x"}, "reason"),
 	({"reason": "no times given"}, "clockInUtc"),
 	({"clockOutUtc": "2026-11-17T16:00:00"}, "clockOutUtc"),        # no zone: would be read in the server's zone

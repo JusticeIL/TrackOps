@@ -79,7 +79,7 @@ The tables, keys, constraints and indexes are drawn in `docs/db/schema.png`.
 | Invariant | Enforced by |
 |---|---|
 | One open shift per user | Filtered unique index on `Shifts(UserId) WHERE ClockOutUtc IS NULL` |
-| One open break per shift | Filtered unique index on `Breaks(ShiftId) WHERE EndUtc IS NULL` |
+| One break per shift | Unique index on `Breaks(ShiftId)` (a one-to-zero-or-one relation) |
 | Clock-out after clock-in; break end after start | Check constraints |
 | Status matches clock-out | Check constraint |
 | A recording happens once per Idempotency-Key | Primary key `(UserId, Key)`, written in the same transaction |
@@ -122,6 +122,7 @@ limits, and time-of-day premiums.
 | Double clock-in (double click, two tabs, two replicas) | The unique index lets one insert win; the others get `409 shift_already_open`. Tested with 20 parallel requests over both replicas |
 | Clock-out with no open shift; break actions with nothing open | `409` with a specific code |
 | Second break while one is open | `409 break_already_open`, also guarded by the unique index |
+| A second break after the first has ended | `409 break_already_taken`: a shift has one break. Checked before the time API is asked, and guarded by the unique index. The UI then offers only clock-out |
 | Clock-out during a break | The break is closed at the same instant, in the same transaction |
 | Retried request (lost response, flaky network) | The client sends an `Idempotency-Key`; the server replays the stored response and records nothing new |
 | Same key sent twice at the same moment | One wins; the other sees the unique-key violation and replays the winner's response |
@@ -295,7 +296,7 @@ None of them has a sidebar entry, so there are no dead links.
   - the API holds no state in its own memory: no sessions, counters, caches or locks;
   - sessions, rate-limit counters, the calendar cache and the background-job lock are in Redis,
     so every replica sees the same ones;
-  - the rules that must never break (one open shift per user, one open break per shift, one
+  - the rules that must never break (one open shift per user, one break per shift, one
     recording per Idempotency-Key) are enforced by the database, so no replica can disagree;
   - schema migrations run once in a separate container before any replica starts.
 

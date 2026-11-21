@@ -85,8 +85,9 @@ def at(day, clock):
 	return datetime.datetime.combine(day, datetime.time.fromisoformat(clock))
 
 
-def shift(start, end, breaks=(), status=CLOSED, corrected=False, audit=None):
-	return {"start": start, "end": end, "breaks": breaks, "status": status, "corrected": corrected, "audit": audit}
+def shift(start, end, pause=None, status=CLOSED, corrected=False, audit=None):
+	"""`pause` is the shift's one break (start, end), or None: a shift has one break at most."""
+	return {"start": start, "end": end, "pause": pause, "status": status, "corrected": corrected, "audit": audit}
 
 
 def plan_shifts(today):
@@ -102,17 +103,17 @@ def plan_shifts(today):
 
 		if weekday == 0:
 			# A plain day: 8 hours of work and a lunch break.
-			shifts.append(shift(at(day, "08:00") + late, at(day, "16:30") + late, [(at(day, "12:00"), at(day, "12:30"))]))
+			shifts.append(shift(at(day, "08:00") + late, at(day, "16:30") + late, (at(day, "12:00"), at(day, "12:30"))))
 		elif weekday == 1 and week == 1:
 			# Forgot to clock out; the manager corrected the clock-out the next morning.
 			start, recorded_end, corrected_end = at(day, "08:30") + late, at(day, "23:40"), at(day, "17:30")
-			shifts.append(shift(start, corrected_end, [(at(day, "12:30"), at(day, "13:00"))], corrected=True, audit={
+			shifts.append(shift(start, corrected_end, (at(day, "12:30"), at(day, "13:00")), corrected=True, audit={
 				"kind": MANAGER_CORRECTION, "by_manager": True, "at": at(next_day, "09:10"),
 				"reason": "Forgot to clock out; time confirmed with the employee",
 				"old": (start, recorded_end), "new": (start, corrected_end)}))
 		elif weekday == 1:
 			# A long day: overtime.
-			shifts.append(shift(at(day, "08:30") + late, at(day, "18:15") + late, [(at(day, "12:30"), at(day, "13:00"))]))
+			shifts.append(shift(at(day, "08:30") + late, at(day, "18:15") + late, (at(day, "12:30"), at(day, "13:00"))))
 		elif weekday == 2:
 			# Two shifts on one day.
 			shifts.append(shift(at(day, "07:30") + late, at(day, "11:30")))
@@ -127,14 +128,13 @@ def plan_shifts(today):
 				"old": (start, None), "new": (start, end)}))
 		elif weekday == 3:
 			# A short day.
-			shifts.append(shift(at(day, "09:00") + late, at(day, "15:00") + late, [(at(day, "12:00"), at(day, "12:20"))]))
+			shifts.append(shift(at(day, "09:00") + late, at(day, "15:00") + late, (at(day, "12:00"), at(day, "12:20"))))
 		elif weekday == 4:
-			# Two breaks.
-			shifts.append(shift(at(day, "08:00") + late, at(day, "17:30") + late,
-				[(at(day, "10:15"), at(day, "10:30")), (at(day, "12:30"), at(day, "13:15"))]))
+			# A long lunch break.
+			shifts.append(shift(at(day, "08:00") + late, at(day, "17:30") + late, (at(day, "12:30"), at(day, "13:15"))))
 		elif weekday == 5 and week % 2 == 1:
 			# A night shift across midnight. On a daylight-saving night it is 7 or 9 hours long.
-			shifts.append(shift(at(day, "22:00") + late, at(next_day, "06:00") + late, [(at(next_day, "00:30"), at(next_day, "01:00"))]))
+			shifts.append(shift(at(day, "22:00") + late, at(next_day, "06:00") + late, (at(next_day, "00:30"), at(next_day, "01:00"))))
 
 	return shifts
 
@@ -167,7 +167,8 @@ def build_sql(username, shifts):
 			"INSERT INTO Shifts (UserId, ClockInUtc, ClockOutUtc, Status, TimeSource, IsCorrected) "
 			f"VALUES (@user, {utc(item['start'])}, {utc(item['end'])}, {item['status']}, N'{MARK}', {int(item['corrected'])});")
 		lines.append("SET @shift = SCOPE_IDENTITY();")
-		for start, end in item["breaks"]:
+		if item["pause"]:
+			start, end = item["pause"]
 			lines.append(f"INSERT INTO Breaks (ShiftId, StartUtc, EndUtc) VALUES (@shift, {utc(start)}, {utc(end)});")
 		audit = item["audit"]
 		if audit:

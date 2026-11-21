@@ -14,7 +14,7 @@ namespace TrackOps.Application.Services;
 ///   2. check cheaply that the action makes sense (no lock, no external call);
 ///   3. read the time from the external time API (fails closed);
 ///   4. in one transaction: lock the open shift, re-check, write, store the response.
-/// The database, not this class, guarantees "one open shift per user" and "one open break per shift".
+/// The database, not this class, guarantees "one open shift per user" and "one break per shift".
 /// </summary>
 public class ShiftRecordingService
 {
@@ -78,12 +78,11 @@ public class ShiftRecordingService
 			async reading =>
 			{
 				Shift shift = await lockOpenShiftAsync(i_User.Id, i_CancellationToken);
-				Break? openBreak = shift.Breaks.FirstOrDefault(pause => pause.EndUtc == null);
 
 				ensureTimeMovedForward(reading, shift);
-				if (openBreak != null)
+				if (shift.Break != null && shift.Break.EndUtc == null)
 				{
-					openBreak.EndUtc = reading.Utc;
+					shift.Break.EndUtc = reading.Utc;
 				}
 
 				shift.ClockOutUtc = reading.Utc;
@@ -101,18 +100,14 @@ public class ShiftRecordingService
 			i_IdempotencyKey,
 			k_BreakStart,
 			k_Created,
-			() => ensureOpenShiftAsync(i_User.Id, i_CancellationToken),
+			() => ensureBreakCanStartAsync(i_User.Id, i_CancellationToken),
 			async reading =>
 			{
 				Shift shift = await lockOpenShiftAsync(i_User.Id, i_CancellationToken);
 
-				if (shift.Breaks.Any(pause => pause.EndUtc == null))
-				{
-					throw Problems.BreakAlreadyOpen();
-				}
-
+				ensureNoBreakYet(shift.Break);
 				ensureTimeMovedForward(reading, shift);
-				shift.Breaks.Add(new Break { StartUtc = reading.Utc });
+				shift.Break = new Break { StartUtc = reading.Utc };
 
 				return shift;
 			},
@@ -130,7 +125,7 @@ public class ShiftRecordingService
 			async reading =>
 			{
 				Shift shift = await lockOpenShiftAsync(i_User.Id, i_CancellationToken);
-				Break? openBreak = shift.Breaks.FirstOrDefault(pause => pause.EndUtc == null);
+				Break? openBreak = shift.Break != null && shift.Break.EndUtc == null ? shift.Break : null;
 
 				if (openBreak == null)
 				{
@@ -193,7 +188,7 @@ public class ShiftRecordingService
 				result = await findStoredAsync(i_User.Id, i_IdempotencyKey, i_Endpoint, i_CancellationToken);
 				if (result == null)
 				{
-					throw r_Db.IsUniqueViolation(exception, DbNames.k_OneOpenBreakIndex)
+					throw r_Db.IsUniqueViolation(exception, DbNames.k_OneBreakPerShiftIndex)
 						? Problems.BreakAlreadyOpen()
 						: Problems.ShiftAlreadyOpen();
 				}
@@ -220,7 +215,7 @@ public class ShiftRecordingService
 	{
 		return r_Db.IsUniqueViolation(i_Exception, DbNames.k_IdempotencyKey)
 			|| r_Db.IsUniqueViolation(i_Exception, DbNames.k_OneOpenShiftIndex)
-			|| r_Db.IsUniqueViolation(i_Exception, DbNames.k_OneOpenBreakIndex);
+			|| r_Db.IsUniqueViolation(i_Exception, DbNames.k_OneBreakPerShiftIndex);
 	}
 
 	private async Task<RecordingResult?> findStoredAsync(int i_UserId, Guid i_Key, string i_Endpoint, CancellationToken i_CancellationToken)
@@ -256,6 +251,32 @@ public class ShiftRecordingService
 		}
 	}
 
+	/// <summary>Cheap check before the time API is called; the re-check under the row lock decides.</summary>
+	private async Task ensureBreakCanStartAsync(int i_UserId, CancellationToken i_CancellationToken)
+	{
+		await ensureOpenShiftAsync(i_UserId, i_CancellationToken);
+
+		Break? existing = await r_Db.Breaks
+			.AsNoTracking()
+			.FirstOrDefaultAsync(pause => pause.Shift!.UserId == i_UserId && pause.Shift.ClockOutUtc == null, i_CancellationToken);
+
+		ensureNoBreakYet(existing);
+	}
+
+	/// <summary>A shift has one break at most: a second one is refused, whether the first is still open or not.</summary>
+	private static void ensureNoBreakYet(Break? i_Existing)
+	{
+		if (i_Existing != null && i_Existing.EndUtc == null)
+		{
+			throw Problems.BreakAlreadyOpen();
+		}
+
+		if (i_Existing != null)
+		{
+			throw Problems.BreakAlreadyTaken();
+		}
+	}
+
 	private async Task<Shift> lockOpenShiftAsync(int i_UserId, CancellationToken i_CancellationToken)
 	{
 		Shift? shift = await r_Db.LockOpenShiftAsync(i_UserId, i_CancellationToken);
@@ -276,9 +297,9 @@ public class ShiftRecordingService
 	{
 		DateTime latest = i_Shift.ClockInUtc;
 
-		foreach (Break pause in i_Shift.Breaks)
+		if (i_Shift.Break != null)
 		{
-			DateTime pauseLatest = pause.EndUtc ?? pause.StartUtc;
+			DateTime pauseLatest = i_Shift.Break.EndUtc ?? i_Shift.Break.StartUtc;
 
 			latest = pauseLatest > latest ? pauseLatest : latest;
 		}

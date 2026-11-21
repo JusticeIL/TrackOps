@@ -94,7 +94,7 @@ public class ShiftAutoCloseJob : BackgroundService
 		TimeSpan maxLength = TimeSpan.FromHours(r_WorkRules.MaxShiftHours);
 		DateTime cutoffUtc = now.Utc - maxLength;
 		List<Shift> forgotten = await db.Shifts
-			.Include(shift => shift.Breaks)
+			.Include(shift => shift.Break)
 			.Where(shift => shift.ClockOutUtc == null && shift.ClockInUtc < cutoffUtc)
 			.OrderBy(shift => shift.ClockInUtc)
 			.Take(k_BatchSize)
@@ -104,9 +104,9 @@ public class ShiftAutoCloseJob : BackgroundService
 		{
 			DateTime closeAtUtc = chooseCloseInstant(shift, maxLength);
 
-			foreach (Break pause in shift.Breaks.Where(pause => pause.EndUtc == null))
+			if (shift.Break != null && shift.Break.EndUtc == null)
 			{
-				pause.EndUtc = closeAtUtc;
+				shift.Break.EndUtc = closeAtUtc;
 			}
 
 			db.ShiftAudits.Add(new ShiftAudit
@@ -145,9 +145,9 @@ public class ShiftAutoCloseJob : BackgroundService
 	{
 		DateTime closeAtUtc = i_Shift.ClockInUtc + i_MaxLength;
 
-		foreach (Break pause in i_Shift.Breaks)
+		if (i_Shift.Break != null)
 		{
-			DateTime afterPause = (pause.EndUtc ?? pause.StartUtc).AddMilliseconds(1);
+			DateTime afterPause = (i_Shift.Break.EndUtc ?? i_Shift.Break.StartUtc).AddMilliseconds(1);
 
 			closeAtUtc = afterPause > closeAtUtc ? afterPause : closeAtUtc;
 		}

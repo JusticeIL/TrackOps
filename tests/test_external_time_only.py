@@ -55,14 +55,14 @@ def test_all_four_recorded_instants_are_the_external_readings(user, stub):
 	stored = user.query("/shifts").json()["items"][0]
 
 	assert opened["clockInUtc"].startswith("2031-05-05T05:00:0")
-	assert started["breaks"][0]["startUtc"].startswith("2031-05-05T09:00:0")
-	assert ended["breaks"][0]["endUtc"].startswith("2031-05-05T09:30:0")
+	assert started["break"]["startUtc"].startswith("2031-05-05T09:00:0")
+	assert ended["break"]["endUtc"].startswith("2031-05-05T09:30:0")
 	assert closed["clockOutUtc"].startswith("2031-05-05T13:00:0")
 	# What was answered is what was stored.
 	assert stored["clockInUtc"] == opened["clockInUtc"]
 	assert stored["clockOutUtc"] == closed["clockOutUtc"]
-	assert stored["breaks"][0]["startUtc"] == started["breaks"][0]["startUtc"]
-	assert stored["breaks"][0]["endUtc"] == ended["breaks"][0]["endUtc"]
+	assert stored["break"]["startUtc"] == started["break"]["startUtc"]
+	assert stored["break"]["endUtc"] == ended["break"]["endUtc"]
 	# Eight hours on the external clock, though the test itself took well under a minute.
 	assert stored["shiftMinutes"] == approx(480)
 	assert stored["breakMinutes"] == approx(30)
@@ -77,8 +77,8 @@ def test_break_closed_by_clock_out_gets_the_external_reading(user, stub):
 
 	closed = user.clock_out().json()
 
-	assert closed["breaks"][0]["endUtc"].startswith("2031-05-05T12:00:0")
-	assert closed["breaks"][0]["endUtc"] == closed["clockOutUtc"]
+	assert closed["break"]["endUtc"].startswith("2031-05-05T12:00:0")
+	assert closed["break"]["endUtc"] == closed["clockOutUtc"]
 
 
 @pytest.mark.parametrize("action", ACTIONS)
@@ -93,8 +93,8 @@ def test_a_time_sent_by_the_client_is_ignored(user, stub, action):
 	shift = response.json()
 	recorded = {
 		"clock_in": shift["clockInUtc"],
-		"break_start": shift["breaks"][-1]["startUtc"] if shift["breaks"] else None,
-		"break_end": shift["breaks"][-1]["endUtc"] if shift["breaks"] else None,
+		"break_start": shift["break"]["startUtc"] if shift["break"] else None,
+		"break_end": shift["break"]["endUtc"] if shift["break"] else None,
 		"clock_out": shift["clockOutUtc"],
 	}[action]
 	assert recorded.startswith("2031-05-05T11:00:0")
@@ -135,7 +135,7 @@ def test_there_is_no_break_endpoint_that_takes_a_time(user, stub):
 	response = user.record("/shifts/current/breaks", json={"startUtc": CLIENT_TIME, "endUtc": CLIENT_TIME})
 
 	assert response.status_code in (404, 405)
-	assert current_state(user)["breaks"] == []
+	assert current_state(user)["break"] is None
 
 
 def test_a_correction_is_stamped_and_judged_by_the_external_clock(manager, stub):
