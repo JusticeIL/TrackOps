@@ -148,6 +148,9 @@ In Frontend:
 - Passwords: the first sign-in with a username stores its PBKDF2 hash (`IPasswordHasher`,
   `Infrastructure/Passwords`); later sign-ins must match. The test overlay sets
   `Auth__PasswordIterations` to 1000; production uses 600,000. Tests all use `conftest.PASSWORD`.
+- 5 wrong passwords for a username within 15 minutes lock it (`ISignInAttempts`, Redis). The test
+  overlay shortens the window to 6 s (`Auth__FailedSignInWindowSeconds`); a test that needs wrong
+  passwords should use its own new username, or it may lock one another test uses.
 - Request text goes through `UserText` (NFC, line breaks, control/bidi/zero-width characters
   refused); `NewEmployeeRequest` refuses unknown fields; enums are read by name only.
 - Correction times must be UTC (`Z`); `EmployeeService` rejects anything else, because a time

@@ -200,8 +200,14 @@ Everything around it is real:
   the session exists in Redis. Sign-out deletes the session, which revokes the JWT at once on
   every replica. Signing in again rotates the session.
 - CSRF: an HMAC-signed double-submit token bound to the session id.
-- Input validation, a sign-in rate limit (10 per minute per address), structured logging of
-  refused sign-ins, and role checks.
+- Input validation, two limits on guessing (below), structured logging of refused sign-ins with
+  the reason, and role checks.
+- **Guessing is limited twice.** Per address: 10 sign-ins a minute. Per username: 5 wrong
+  passwords within 15 minutes lock that username until the 15 minutes are over, whatever is typed
+  (429 `sign_in_locked` with `Retry-After`); a correct password before that clears the count. The
+  count is in Redis, so both replicas share it, and it is checked before the password is hashed.
+  The trade-off is known: anyone can lock a username for 15 minutes by typing wrong passwords for
+  it. A shorter lock than usual keeps that cheap, and the per-address limit slows it down.
 
 Two roles only: Employee and Manager. Manager routes are locked at controller level.
 
@@ -303,7 +309,8 @@ None of them has a sidebar entry, so there are no dead links.
   those redundant is an infrastructure matter (a database failover group, Redis replication, two
   gateways) and needs no change in the application.
 - Rate limits are counted in Redis, so both replicas share them: sign-in 10/min per IP;
-  recording 30/min, search 60/min and everything else 240/min per user.
+  recording 30/min, search 60/min and everything else 240/min per user. Wrong passwords are
+  counted per username too (5 per 15 minutes, section 6).
 - Read cache: a calendar month with no open shift is cached for 60 s per user; any write to that
   user's shifts invalidates it. Recorded timestamps are never cached.
 - Compression: brotli/gzip for API responses, gzip for static files. Hashed assets are cached for
@@ -365,6 +372,7 @@ None of them has a sidebar entry, so there are no dead links.
 - Anyone can claim a username nobody has used yet, including a configured manager username that
   has never signed in. A forgotten password cannot be reset: use another username, or reset the
   database (`docker compose down -v`).
-- Ten failed sign-ins a minute per address slow guessing down; there is no account lockout.
+- Someone who knows a username can lock it for 15 minutes with 5 wrong passwords. There is no
+  multi-factor authentication.
 - Keyboard operation was built in (native buttons, a native dialog, a combobox pattern, visible
   focus, a skip link) and spot-checked, not exhaustively tested with a screen reader.

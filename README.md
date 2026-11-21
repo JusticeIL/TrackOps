@@ -135,7 +135,8 @@ Then open <http://localhost:8080> and sign in. There is no separate sign-up: **t
 with a username creates that user, and the password you type then becomes its password.** Any
 username works (3–32 letters, digits, `.`, `_`, `-`; upper and lower case are the same) with any
 password of 8–128 characters. Every later sign-in with that username needs the same password; the
-user's shifts and requests stay with it. Everyone signs in as an employee. Press
+user's shifts and requests stay with it. After 5 wrong passwords within 15 minutes the username is
+locked until those 15 minutes are over. Everyone signs in as an employee. Press
 **כניסה** on the home screen: the clock-in time comes from the external time service.
 
 ### 4. Stop or reset
@@ -153,6 +154,7 @@ docker compose down -v     # stops everything and deletes the database
 | `docker compose up` fails with "port is already allocated" | Something else uses port 8080 | Set `PUBLIC_PORT` (for example 8081) and `PUBLIC_ORIGIN=http://localhost:8081` in `.env` |
 | Clocking in shows "שירות הזמן החיצוני אינו זמין" (503 `time_source_unavailable`) | Neither time service could be reached. By design nothing is recorded with another clock | Check the internet connection, proxy or firewall with the `curl` command above, and try again |
 | `docker compose` says a variable is not set | `.env` is missing or a required value is empty | Create it as in step 1 |
+| Sign-in says "נחסמה זמנית" (429 `sign_in_locked`) | 5 wrong passwords for that username within 15 minutes | Wait the minutes the message names; the right password works again then |
 | Sign-in says "שם המשתמש או הסיסמה שגויים" | That username already signed in once, with another password | Use the password from its first sign-in, or another username; `docker compose down -v` starts over with no users |
 | Scripts on Windows are slow against `localhost` | Windows tries IPv6 first and waits two seconds | Use `127.0.0.1` instead of `localhost` in scripts |
 
@@ -260,8 +262,8 @@ your machine from the Dockerfiles, so they match its processor. The base images 
   x86_64/amd64 emulation on Apple Silicon** switched on. The first start of the database is slower.
 
   What was checked: every base image except SQL Server is published for ARM (`linux/arm64`), and
-  the project's own backend and frontend images were built for `linux/arm64` under emulation on
-  Windows, and the ARM backend started. What was not: a run on a real Apple Silicon Mac. There is
+  all four of the project's own images (API, migrator, frontend, test time stub) were built for
+  `linux/arm64` under emulation on Windows, from the final code, and the ARM API started. What was not: a run on a real Apple Silicon Mac. There is
   a public report from October 2025 that macOS 26 broke this emulation for a SQL Server container. If the
   `sqlserver` container never becomes healthy on such a Mac, that is the likely cause, and the
   project then needs an Intel/AMD machine.
@@ -314,10 +316,10 @@ tests/.venv/Scripts/python -m pip install -r tests/requirements.txt   # Linux/ma
 tests/.venv/Scripts/python -m pytest
 ```
 
-About 165 tests, roughly four minutes. They cover clock in/out through the stub; fail-closed
+About 200 tests, roughly four minutes. They cover clock in/out through the stub; fail-closed
 behaviour when the time source is down, slow or wrong; DST days (23 h and 25 h) and overtime;
 20 concurrent clock-ins across both replicas; idempotent retries; `QUERY` search and pagination;
-filing requests and sickness reports;
+filing requests and sickness reports; passwords and the lock after wrong ones;
 401/403 on manager routes; CSRF; rate limiting; security headers; CORS; XSS and SQL injection
 payloads; and a static check that no code outside the two time modules reads the system clock.
 

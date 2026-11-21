@@ -62,7 +62,7 @@ Every error is `application/problem+json` (RFC 9457):
 | 403 | `forbidden`, `csrf_invalid` |
 | 404 | `not_found` (also for a shift id that is not the given employee's) |
 | 409 | `shift_already_open`, `no_open_shift`, `break_already_open`, `no_open_break`, `stale_version`, `shift_overlap`, `idempotency_key_reused` |
-| 429 | `rate_limited` (with `Retry-After`) |
+| 429 | `rate_limited`, `sign_in_locked` (both with `Retry-After`) |
 | 500 | `internal_error` (no details are returned) |
 | 503 | `time_source_unavailable` (with `Retry-After`), `dependency_unavailable` |
 
@@ -95,6 +95,7 @@ Counted in Redis, so both replicas share them. Limits are per minute and configu
 | Scope | Default | Key |
 |---|---|---|
 | Sign-in | 10 | client IP |
+| Wrong passwords | 5 per 15 minutes, then the username is locked until they are over (`sign_in_locked`) | username |
 | Recording endpoints | 30 | user |
 | Search (`QUERY`) | 60 | user |
 | Everything else | 240 | user |
@@ -136,7 +137,7 @@ Counted in Redis, so both replicas share them. Limits are per minute and configu
 | Method | Path | Role | Success | Notes |
 |---|---|---|---|---|
 | GET | `/auth/csrf` | Public | 200 `{ token }` | |
-| POST | `/auth/session` | Public | 200 User | Body `{ username, password }`. The first sign-in with a username creates the user and stores a hash of this password; later sign-ins must give the same password, else 401 `invalid_credentials`. The role is Employee, or Manager for the one username in the server's `MANAGER_USERNAME` setting (empty by default). 400 on invalid input. |
+| POST | `/auth/session` | Public | 200 User | Body `{ username, password }`. The first sign-in with a username creates the user and stores a hash of this password; later sign-ins must give the same password, else 401 `invalid_credentials`. After 5 wrong passwords within 15 minutes, 429 `sign_in_locked` with `Retry-After` until they are over, even for the right password. The role is Employee, or Manager for the one username in the server's `MANAGER_USERNAME` setting (empty by default). 400 on invalid input. |
 | GET | `/auth/session` | Employee | 200 User | 401 when not signed in. |
 | DELETE | `/auth/session` | Employee | 204 | Revokes the session and clears the cookies. |
 
