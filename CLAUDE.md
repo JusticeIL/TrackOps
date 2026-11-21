@@ -142,6 +142,9 @@ In Frontend:
   the request history (`features/requests`) and events (`features/calendar`). Never put sample
   rows in the database or the API. Everything else on those screens is real: hours come from the
   calendar API, and a filed request is stored through `POST /requests`.
+- A shift has one break at most: `Shift.Break` (one-to-one, unique index `UX_Breaks_OnePerShift`),
+  `break` in the API, `409 break_already_taken` for a second one. Do not bring back a list of
+  breaks; the demo seed and the tests assume one.
 - Day minutes are split from a shift's cumulative minutes (`WorkCalculator`), so the days of a shift
   add up to its own minutes. Keep it that way; `tests/test_day_boundaries.py` checks midnight,
   month ends and when "today" turns.
