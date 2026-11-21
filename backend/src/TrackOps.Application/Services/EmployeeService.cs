@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using TrackOps.Application.Abstractions;
 using TrackOps.Application.Contracts;
+using TrackOps.Domain;
 using TrackOps.Domain.Entities;
 
 namespace TrackOps.Application.Services;
@@ -9,10 +10,9 @@ namespace TrackOps.Application.Services;
 /// <summary>Manager-only use cases: find employees, list everyone's shifts, correct a shift with an audit trail.</summary>
 public class EmployeeService
 {
-	public const int k_MaxEmployeeLimit = 20;
-	public const int k_MinReasonLength = 3;
-	public const int k_MaxReasonLength = 300;
-	private const string k_LikeEscape = "\\";
+	private const int k_MaxEmployeeLimit = 20;
+	private const int k_MinReasonLength = 3;
+	private const int k_MaxReasonLength = 300;
 	private readonly IAppDbContext r_Db;
 	private readonly ITimeProvider r_TimeProvider;
 	private readonly ICalendarCache r_CalendarCache;
@@ -46,10 +46,10 @@ public class EmployeeService
 		string pattern = ShiftSearch.ToLikePattern(search, v_PrefixOnly);
 		List<UserDto> users = await r_Db.Users
 			.AsNoTracking()
-			.Where(user => EF.Functions.Like(user.Username, pattern, k_LikeEscape) || EF.Functions.Like(user.DisplayName, pattern, k_LikeEscape))
+			.Where(user => EF.Functions.Like(user.Username, pattern, ShiftSearch.k_LikeEscape) || EF.Functions.Like(user.DisplayName, pattern, ShiftSearch.k_LikeEscape))
 			.OrderBy(user => user.Username)
 			.Take(limit)
-			.Select(user => new UserDto { Id = user.Id, Username = user.Username, DisplayName = user.DisplayName, Role = user.Role })
+			.Select(user => ShiftMapper.ToDto(user))
 			.ToListAsync(i_CancellationToken);
 
 		return new ItemsResult<UserDto> { Items = users };
@@ -85,8 +85,8 @@ public class EmployeeService
 			throw Problems.StaleVersion();
 		}
 
-		DateTime newClockIn = truncateToMilliseconds(i_Request.ClockInUtc ?? shift.ClockInUtc);
-		DateTime? newClockOut = i_Request.ClockOutUtc.HasValue ? truncateToMilliseconds(i_Request.ClockOutUtc.Value) : shift.ClockOutUtc;
+		DateTime newClockIn = Instants.TruncateToMilliseconds(i_Request.ClockInUtc ?? shift.ClockInUtc);
+		DateTime? newClockOut = i_Request.ClockOutUtc.HasValue ? Instants.TruncateToMilliseconds(i_Request.ClockOutUtc.Value) : shift.ClockOutUtc;
 
 		validateNewTimes(shift, newClockIn, newClockOut, now.Utc);
 		await ensureNoOverlapAsync(shift, newClockIn, newClockOut, i_CancellationToken);
@@ -131,15 +131,7 @@ public class EmployeeService
 			{
 				Id = audit.Id,
 				Kind = audit.Kind,
-				ChangedBy = audit.ChangedByUser == null
-					? null
-					: new UserDto
-					{
-						Id = audit.ChangedByUser.Id,
-						Username = audit.ChangedByUser.Username,
-						DisplayName = audit.ChangedByUser.DisplayName,
-						Role = audit.ChangedByUser.Role,
-					},
+				ChangedBy = audit.ChangedByUser == null ? null : ShiftMapper.ToDto(audit.ChangedByUser),
 				ChangedAtUtc = audit.ChangedAtUtc,
 				Reason = audit.Reason,
 				OldClockInUtc = audit.OldClockInUtc,
@@ -166,6 +158,17 @@ public class EmployeeService
 		if (!i_Request.ClockInUtc.HasValue && !i_Request.ClockOutUtc.HasValue)
 		{
 			errors.Add("clockInUtc", "send clockInUtc, clockOutUtc or both");
+		}
+
+		// A time without "Z" would be read in the server's own time zone. Only UTC instants are accepted.
+		if (i_Request.ClockInUtc.HasValue && i_Request.ClockInUtc.Value.Kind != DateTimeKind.Utc)
+		{
+			errors.Add("clockInUtc", "clockInUtc must be a UTC time ending in Z");
+		}
+
+		if (i_Request.ClockOutUtc.HasValue && i_Request.ClockOutUtc.Value.Kind != DateTimeKind.Utc)
+		{
+			errors.Add("clockOutUtc", "clockOutUtc must be a UTC time ending in Z");
 		}
 
 		if (string.IsNullOrEmpty(i_Request.RowVersion) || !tryDecodeBase64(i_Request.RowVersion, out version))
@@ -253,12 +256,5 @@ public class EmployeeService
 				pause.EndUtc = i_NewClockOut;
 			}
 		}
-	}
-
-	private static DateTime truncateToMilliseconds(DateTime i_Value)
-	{
-		DateTime utc = i_Value.ToUniversalTime();
-
-		return new DateTime(utc.Ticks - (utc.Ticks % TimeSpan.TicksPerMillisecond), DateTimeKind.Utc);
 	}
 }

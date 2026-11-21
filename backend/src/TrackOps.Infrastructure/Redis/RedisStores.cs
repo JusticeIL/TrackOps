@@ -11,7 +11,7 @@ namespace TrackOps.Infrastructure.Redis;
 /// </summary>
 public class RedisSessionStore : ISessionStore
 {
-	public const int k_LifetimeSeconds = 86400;
+	private const int k_LifetimeSeconds = 86400;
 	private const int k_SessionIdBytes = 32;
 	private readonly IConnectionMultiplexer r_Redis;
 
@@ -96,16 +96,21 @@ public class RedisCalendarCache : ICalendarCache
 		r_Redis = i_Redis;
 	}
 
-	public async Task<string?> GetAsync(int i_UserId, string i_Key)
+	public async Task<CachedValue> GetAsync(int i_UserId, string i_Key)
 	{
-		RedisValue cached = await r_Redis.GetDatabase().StringGetAsync(await versionedKeyAsync(i_UserId, i_Key));
+		IDatabase database = r_Redis.GetDatabase();
+		RedisValue version = await database.StringGetAsync(versionKey(i_UserId));
+		CachedValue result = new CachedValue { Version = version.HasValue ? version.ToString() : "0" };
+		RedisValue cached = await database.StringGetAsync(valueKey(i_UserId, result.Version, i_Key));
 
-		return cached.HasValue ? cached.ToString() : null;
+		result.Json = cached.HasValue ? cached.ToString() : null;
+
+		return result;
 	}
 
-	public async Task SetAsync(int i_UserId, string i_Key, string i_Json)
+	public async Task SetAsync(int i_UserId, string i_Key, string i_Version, string i_Json)
 	{
-		await r_Redis.GetDatabase().StringSetAsync(await versionedKeyAsync(i_UserId, i_Key), i_Json, TimeSpan.FromSeconds(k_LifetimeSeconds));
+		await r_Redis.GetDatabase().StringSetAsync(valueKey(i_UserId, i_Version, i_Key), i_Json, TimeSpan.FromSeconds(k_LifetimeSeconds));
 	}
 
 	public Task InvalidateAsync(int i_UserId)
@@ -113,11 +118,9 @@ public class RedisCalendarCache : ICalendarCache
 		return r_Redis.GetDatabase().StringIncrementAsync(versionKey(i_UserId));
 	}
 
-	private async Task<RedisKey> versionedKeyAsync(int i_UserId, string i_Key)
+	private static RedisKey valueKey(int i_UserId, string i_Version, string i_Key)
 	{
-		RedisValue version = await r_Redis.GetDatabase().StringGetAsync(versionKey(i_UserId));
-
-		return $"calendar:{i_UserId}:{(version.HasValue ? version.ToString() : "0")}:{i_Key}";
+		return $"calendar:{i_UserId}:{i_Version}:{i_Key}";
 	}
 
 	private static RedisKey versionKey(int i_UserId)

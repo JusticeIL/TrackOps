@@ -10,7 +10,7 @@ namespace TrackOps.Application.Services;
 /// <summary>Read-only queries over the signed-in user's own shifts, and the calendar built from them.</summary>
 public class ShiftReadService
 {
-	public const int k_MaxActivityLimit = 50;
+	private const int k_MaxActivityLimit = 50;
 	private const int k_FirstYear = 2000;
 	private const int k_LastYear = 2100;
 	private readonly IAppDbContext r_Db;
@@ -36,21 +36,6 @@ public class ShiftReadService
 		return shift == null ? null : ShiftMapper.Complete(shift);
 	}
 
-	public async Task<ShiftDto> GetByIdAsync(int i_UserId, long i_ShiftId, CancellationToken i_CancellationToken)
-	{
-		ShiftDto? shift = await ownShifts(i_UserId)
-			.Where(candidate => candidate.Id == i_ShiftId)
-			.Select(ShiftMapper.sr_Projection)
-			.FirstOrDefaultAsync(i_CancellationToken);
-
-		if (shift == null)
-		{
-			throw Problems.NotFound();
-		}
-
-		return ShiftMapper.Complete(shift);
-	}
-
 	public async Task<ItemsResult<ActivityItemDto>> GetActivityAsync(int i_UserId, int i_Limit, CancellationToken i_CancellationToken)
 	{
 		if (i_Limit < 1 || i_Limit > k_MaxActivityLimit)
@@ -71,18 +56,18 @@ public class ShiftReadService
 
 		foreach (ShiftDto shift in recentShifts)
 		{
-			events.Add(new ActivityItemDto { Type = eActivityType.ClockIn, AtUtc = shift.ClockInUtc, ShiftId = shift.Id });
+			events.Add(new ActivityItemDto { Type = eActivityType.ClockIn, AtUtc = shift.ClockInUtc });
 			if (shift.ClockOutUtc.HasValue)
 			{
-				events.Add(new ActivityItemDto { Type = eActivityType.ClockOut, AtUtc = shift.ClockOutUtc.Value, ShiftId = shift.Id });
+				events.Add(new ActivityItemDto { Type = eActivityType.ClockOut, AtUtc = shift.ClockOutUtc.Value });
 			}
 
 			foreach (BreakDto pause in shift.Breaks)
 			{
-				events.Add(new ActivityItemDto { Type = eActivityType.BreakStart, AtUtc = pause.StartUtc, ShiftId = shift.Id });
+				events.Add(new ActivityItemDto { Type = eActivityType.BreakStart, AtUtc = pause.StartUtc });
 				if (pause.EndUtc.HasValue)
 				{
-					events.Add(new ActivityItemDto { Type = eActivityType.BreakEnd, AtUtc = pause.EndUtc.Value, ShiftId = shift.Id });
+					events.Add(new ActivityItemDto { Type = eActivityType.BreakEnd, AtUtc = pause.EndUtc.Value });
 				}
 			}
 		}
@@ -105,12 +90,12 @@ public class ShiftReadService
 	public async Task<CalendarMonthDto> GetMonthAsync(int i_UserId, string i_Month, CancellationToken i_CancellationToken)
 	{
 		DateOnly firstDay = parseMonth(i_Month);
-		string? cachedJson = await r_CalendarCache.GetAsync(i_UserId, i_Month);
+		CachedValue cached = await r_CalendarCache.GetAsync(i_UserId, i_Month);
 		CalendarMonthDto month;
 
-		if (cachedJson != null)
+		if (cached.Json != null)
 		{
-			month = JsonSerializer.Deserialize<CalendarMonthDto>(cachedJson, JsonDefaults.sr_Options)!;
+			month = JsonSerializer.Deserialize<CalendarMonthDto>(cached.Json, JsonDefaults.sr_Options)!;
 		}
 		else
 		{
@@ -122,7 +107,7 @@ public class ShiftReadService
 			// Any write to this user's shifts invalidates the cache (see ICalendarCache).
 			if (shifts.All(shift => shift.ClockOutUtc.HasValue))
 			{
-				await r_CalendarCache.SetAsync(i_UserId, i_Month, JsonSerializer.Serialize(month, JsonDefaults.sr_Options));
+				await r_CalendarCache.SetAsync(i_UserId, i_Month, cached.Version, JsonSerializer.Serialize(month, JsonDefaults.sr_Options));
 			}
 		}
 
@@ -151,15 +136,10 @@ public class ShiftReadService
 			});
 		}
 
-		int daysWorked = month.Days.Count(day => day.WorkedMinutes > 0);
-		int overtimeMinutes = month.Days.Sum(day => day.OvertimeMinutes);
-
 		month.Totals = new MonthTotalsDto
 		{
 			WorkedMinutes = month.Days.Sum(day => day.WorkedMinutes),
-			OvertimeMinutes = overtimeMinutes,
-			DaysWorked = daysWorked,
-			AverageDailyOvertimeMinutes = daysWorked == 0 ? 0 : overtimeMinutes / daysWorked,
+			OvertimeMinutes = month.Days.Sum(day => day.OvertimeMinutes),
 		};
 
 		return month;

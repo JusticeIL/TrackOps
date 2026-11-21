@@ -74,7 +74,7 @@ export function ClockCard({ shift, isLoading }: { shift: Shift | null; isLoading
 
       <div aria-live="polite">
         {action.isPending && <p className="muted">רושם לפי שעון חיצוני…</p>}
-        {action.isError && <Notice kind="error">{describeError(action.error)}</Notice>}
+        {action.isError && <Notice>{describeError(action.error)}</Notice>}
       </div>
     </section>
   )

@@ -26,6 +26,11 @@ public class DayTotals
 /// <summary>
 /// Worked time and overtime per Europe/Zurich local day, computed from UTC instants only.
 /// A shift crossing midnight is split between the two days. Overtime = max(0, worked - target).
+///
+/// Minutes are whole numbers, so splitting needs care: flooring each day's seconds separately
+/// would lose a minute at midnight (23:59:30-00:01:00 is 1 minute, but 0 + 0 per day). Instead a
+/// shift's minutes are counted from its start up to each midnight and floored once; a day gets
+/// the difference. The days of a shift then always add up to exactly the shift's own minutes.
 /// </summary>
 public static class WorkCalculator
 {
@@ -33,30 +38,23 @@ public static class WorkCalculator
 	{
 		DateTime dayStartUtc = ZurichCalendar.StartOfDayUtc(i_Date);
 		DateTime dayEndUtc = ZurichCalendar.StartOfDayUtc(i_Date.AddDays(1));
-		double shiftSeconds = 0;
-		double breakSeconds = 0;
+		int workedMinutes = 0;
+		int breakMinutes = 0;
 		int shiftCount = 0;
 
 		foreach (WorkSpan shift in i_Shifts)
 		{
 			DateTime shiftEndUtc = effectiveEnd(shift.StartUtc, shift.EndUtc, i_NowUtc);
-			double overlap = overlapSeconds(shift.StartUtc, shiftEndUtc, dayStartUtc, dayEndUtc);
+			bool touchesDay = overlapSeconds(shift.StartUtc, shiftEndUtc, dayStartUtc, dayEndUtc) > 0
+				|| isInside(shift.StartUtc, dayStartUtc, dayEndUtc);
 
-			if (overlap > 0 || isInside(shift.StartUtc, dayStartUtc, dayEndUtc))
+			if (touchesDay)
 			{
 				shiftCount++;
-				shiftSeconds += overlap;
-				foreach (WorkSpan pause in shift.Breaks)
-				{
-					DateTime pauseEndUtc = effectiveEnd(pause.StartUtc, pause.EndUtc, shiftEndUtc);
-
-					breakSeconds += overlapSeconds(pause.StartUtc, pauseEndUtc, dayStartUtc, dayEndUtc);
-				}
+				workedMinutes += workedMinutesBefore(shift, shiftEndUtc, dayEndUtc) - workedMinutesBefore(shift, shiftEndUtc, dayStartUtc);
+				breakMinutes += breakMinutesBefore(shift, shiftEndUtc, dayEndUtc) - breakMinutesBefore(shift, shiftEndUtc, dayStartUtc);
 			}
 		}
-
-		int breakMinutes = (int)(breakSeconds / 60);
-		int workedMinutes = Math.Max(0, (int)((shiftSeconds - breakSeconds) / 60));
 
 		return new DayTotals
 		{
@@ -71,6 +69,34 @@ public static class WorkCalculator
 	public static int MinutesBetween(DateTime i_StartUtc, DateTime i_EndUtc)
 	{
 		return Math.Max(0, (int)((i_EndUtc - i_StartUtc).TotalSeconds / 60));
+	}
+
+	/// <summary>Whole worked minutes of the shift before an instant: time on shift minus time on break, floored once.</summary>
+	private static int workedMinutesBefore(WorkSpan i_Shift, DateTime i_ShiftEndUtc, DateTime i_InstantUtc)
+	{
+		double shiftSeconds = overlapSeconds(i_Shift.StartUtc, i_ShiftEndUtc, DateTime.MinValue, i_InstantUtc);
+		double workedSeconds = shiftSeconds - breakSecondsBefore(i_Shift, i_ShiftEndUtc, i_InstantUtc);
+
+		return Math.Max(0, (int)(workedSeconds / 60));
+	}
+
+	private static int breakMinutesBefore(WorkSpan i_Shift, DateTime i_ShiftEndUtc, DateTime i_InstantUtc)
+	{
+		return (int)(breakSecondsBefore(i_Shift, i_ShiftEndUtc, i_InstantUtc) / 60);
+	}
+
+	private static double breakSecondsBefore(WorkSpan i_Shift, DateTime i_ShiftEndUtc, DateTime i_InstantUtc)
+	{
+		double seconds = 0;
+
+		foreach (WorkSpan pause in i_Shift.Breaks)
+		{
+			DateTime pauseEndUtc = effectiveEnd(pause.StartUtc, pause.EndUtc, i_ShiftEndUtc);
+
+			seconds += overlapSeconds(pause.StartUtc, pauseEndUtc, DateTime.MinValue, i_InstantUtc);
+		}
+
+		return seconds;
 	}
 
 	private static DateTime effectiveEnd(DateTime i_StartUtc, DateTime? i_EndUtc, DateTime i_FallbackUtc)

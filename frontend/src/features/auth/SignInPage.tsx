@@ -65,7 +65,7 @@ export default function SignInPage() {
           {fieldErrors.password && <span className="field-error">הסיסמה חייבת להכיל 8 תווים לפחות.</span>}
         </div>
 
-        {signIn.isError && Object.keys(fieldErrors).length === 0 && <Notice kind="error">{describeError(signIn.error)}</Notice>}
+        {signIn.isError && Object.keys(fieldErrors).length === 0 && <Notice>{describeError(signIn.error)}</Notice>}
 
         <button type="submit" className="button button-primary button-large" disabled={signIn.isPending}>
           {signIn.isPending ? 'מתחבר…' : 'כניסה'}

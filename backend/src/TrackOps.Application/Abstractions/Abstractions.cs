@@ -59,11 +59,23 @@ public interface ISessionStore
 }
 
 /// <summary>Per-user read cache for calendar months. Invalidated on every write to that user's shifts.</summary>
+/// <summary>A cache lookup: the cached JSON (null on a miss) and the cache version it was looked up under.</summary>
+public class CachedValue
+{
+	public string Version { get; set; } = string.Empty;
+
+	public string? Json { get; set; }
+}
+
 public interface ICalendarCache
 {
-	Task<string?> GetAsync(int i_UserId, string i_Key);
+	Task<CachedValue> GetAsync(int i_UserId, string i_Key);
 
-	Task SetAsync(int i_UserId, string i_Key, string i_Json);
+	/// <summary>
+	/// Stores under the version returned by the GetAsync that missed. If the user's shifts changed in
+	/// between, that version is already outdated, so the value can never be served as current.
+	/// </summary>
+	Task SetAsync(int i_UserId, string i_Key, string i_Version, string i_Json);
 
 	Task InvalidateAsync(int i_UserId);
 }
@@ -117,7 +129,6 @@ public class CurrentUser
 	public eUserRole Role { get; set; }
 }
 
-/// <summary>Business rules that are configuration, not code.</summary>
 /// <summary>
 /// Who signs in as a manager. Empty (the default) means nobody: every user is an employee and the
 /// manager routes answer 403 to everyone.
@@ -127,6 +138,7 @@ public class AuthRules
 	public string ManagerUsername { get; set; } = string.Empty;
 }
 
+/// <summary>Business rules that are configuration, not code.</summary>
 public class WorkRules
 {
 	public int DailyTargetMinutes { get; set; } = 480;

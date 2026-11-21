@@ -9,15 +9,16 @@
  *   --accent-ink #1F6F72 on white              5.9 : 1   the teal used for text and links on light
  *   --muted      #5A5A5A on white              6.9 : 1   secondary text
  *   --danger     #B3261E on white              6.5 : 1   errors
- *   --success    #1B6E36 on white              6.3 : 1   positive status
  *   --line-strong #8A8A8A on white             3.5 : 1   input borders and other UI parts
  *   --disabled   #808080 on --disabled-tint    3.4 : 1   disabled controls (WCAG exempts them from the minimum)
  *
- * Request statuses are the one place with colours outside the three: green, amber and red say
- * approved, in progress and rejected. Each is dark text on a light fill of the same hue:
+ * Status badges are the one place with colours outside the three. Request statuses: green, amber
+ * and red say approved, in progress and rejected; an auto-closed shift is amber too
+ * (--warning-ink on --warning-tint). Each is dark text on a light fill of the same hue:
  *   approved  #14562A on #CDEED8   7.0 : 1
  *   progress  #6B3F00 on #FFD98A   6.7 : 1
  *   rejected  #8F1D17 on #F8CFCB   6.3 : 1
+ *   auto-closed #7A4B00 on #FFF4DC 6.8 : 1
  */
 :root {
   --ink: #0a0a0a;
@@ -33,8 +34,6 @@
   --disabled-tint: #ededed;
   --danger: #b3261e;
   --danger-tint: #fdecec;
-  --success: #1b6e36;
-  --success-tint: #e7f6ec;
   --warning-ink: #7a4b00;
   --warning-tint: #fff4dc;
   --approved-ink: #14562a;

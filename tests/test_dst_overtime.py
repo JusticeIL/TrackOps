@@ -89,7 +89,7 @@ def test_night_shift_over_fall_back_counts_the_repeated_hour(user, stub):
 	assert day(user, "2027-10-31")["overtimeMinutes"] == 0
 
 
-def test_month_totals_sum_the_days_and_average_over_days_worked(user, stub):
+def test_month_totals_sum_the_days(user, stub):
 	work_shift(user, stub, "2026-11-16T07:00:00Z", "2026-11-16T17:00:00Z")   # 10 h -> 120 overtime
 	work_shift(user, stub, "2026-11-17T07:00:00Z", "2026-11-17T16:00:00Z")   # 9 h  ->  60 overtime
 	work_shift(user, stub, "2026-11-18T07:00:00Z", "2026-11-18T13:00:00Z")   # 6 h  ->   0 overtime
@@ -101,10 +101,8 @@ def test_month_totals_sum_the_days_and_average_over_days_worked(user, stub):
 	assert by_date["2026-11-16"]["overtimeMinutes"] == approx(120)
 	assert by_date["2026-11-17"]["overtimeMinutes"] == approx(60)
 	assert by_date["2026-11-18"]["overtimeMinutes"] == 0
-	assert month["totals"]["daysWorked"] == 3
 	assert month["totals"]["workedMinutes"] == pytest.approx(25 * 60, abs=3)   # three shifts, up to a minute each
 	assert month["totals"]["overtimeMinutes"] == pytest.approx(180, abs=2)
-	assert month["totals"]["averageDailyOvertimeMinutes"] == pytest.approx(60, abs=1)
 
 
 def test_month_cache_is_invalidated_by_a_new_shift(user, stub):

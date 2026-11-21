@@ -48,7 +48,7 @@ export default function EmployeesPage() {
           <EmployeePicker selected={employee} onSelect={changeEmployee} />
         </ShiftFilters>
         {result.isError ? (
-          <Notice kind="error">{describeError(result.error)}</Notice>
+          <Notice>{describeError(result.error)}</Notice>
         ) : result.isPending ? (
           <SkeletonRows rows={8} />
         ) : (

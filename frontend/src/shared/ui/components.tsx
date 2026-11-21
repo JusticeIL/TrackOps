@@ -37,9 +37,10 @@ export function StatusBadge({ status }: { status: ShiftStatus }) {
   return <span className={`badge ${STATUS_CLASSES[status]}`}>{STATUS_LABELS[status]}</span>
 }
 
-export function Notice({ kind, children }: { kind: 'error' | 'info'; children: ReactNode }) {
+/** An error message. role="alert" makes screen readers announce it as soon as it appears. */
+export function Notice({ children }: { children: ReactNode }) {
   return (
-    <p className={`notice notice-${kind}`} role={kind === 'error' ? 'alert' : 'status'}>
+    <p className="notice notice-error" role="alert">
       {children}
     </p>
   )

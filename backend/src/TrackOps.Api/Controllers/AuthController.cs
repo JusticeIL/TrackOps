@@ -114,7 +114,6 @@ public class TimeController : ControllerBase
 			Utc = reading.Utc,
 			Zone = ZurichCalendar.k_ZoneId,
 			OffsetSeconds = ZurichCalendar.UtcOffsetSecondsAt(reading.Utc),
-			Source = reading.Source,
 		});
 	}
 }

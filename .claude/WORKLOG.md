@@ -45,6 +45,7 @@ code is in `plans/01-api-contract-and-execution-plan.md`.
 | An optional free-text note on clock-out, which it had added without asking and without listing it as a decision | Removed everywhere | I asked what it was for. It answered plainly: it gave the history search something to search and the security tests a free-text field. Nothing in the task asks for it, so the column, the field, the search box and the tests' use of it went |
 | An overtime card on the home screen | Removed; overtime stays on the Calendar | The home screen is for clocking in and out |
 | A manager who signs in with the username `admin` | Off by default, behind one setting | The task is a clock for workers. It asked whether to delete the manager code or switch it off; I chose the switch, since the code is tested and is the only way to fix a shift the system closed by itself |
+| Remove the two health endpoints along with the other dead code (they have no caller) | Keep them | My call: they stay for a future container health check |
 | Two screens left out of the build (forms and data, requests and reports) | First shown as pictures of the planned screens, then built for real: hours from my actual shifts, forms that file a stored request, sample data only where the system has none | I wanted the menu to show where the product is going without building features the task does not ask for |
 
 ## Where Claude Code corrected me
@@ -81,6 +82,12 @@ code is in `plans/01-api-contract-and-execution-plan.md`.
 | The plan said "built-in antiforgery" | While implementing: it needs data-protection keys shared between replicas | A small HMAC-signed token; listed as a deviation in DECISIONS.md |
 | The first version of the demo-data tool failed on its first run | It ran the tool instead of assuming | `sqlcmd` runs with `QUOTED_IDENTIFIER` off by default, and SQL Server refuses writes to tables with filtered indexes that way; one flag fixed it |
 | A commit message used a section heading that is not in my format | It compared its message with the earlier ones | It rewrote the three local commits before continuing |
+| The move to .NET 11 was made without checking that Visual Studio 2022 can open it. It cannot: the .NET 11 SDK needs Visual Studio's build engine 18.7, and VS 2022 has 17.14 | The day before submission I opened the solution in Visual Studio and every project failed to load | It found the cause by reading each installed SDK's minimum build-engine version, not by guessing. The fix is Visual Studio 2026; the README now states the requirement |
+| A shift split at midnight lost a minute in the Calendar (23:59:30–00:01:00 was 1 minute in History, 0 + 0 per day) | An audit I asked for, of every day switch | Minutes are now split from the shift's cumulative minutes; new tests cover midnight, month ends and when "today" turns |
+| Hidden time-zone paths: a manager's correction without `Z` would have been read in the server's own zone, and the time parser would have done the same with a zone it did not expect | An audit I asked for, of every place that reads a time or a day | Both are refused now; the static clock check also got tighter (per-file allowlists, local-zone getters, Python) |
+| Two small races: the display clock could briefly jump back under load, and a calendar month computed before a write could be cached as current for a minute | The same audit | Fixed: one immutable clock anchor; the cache stores under the version it read |
+| After a Windows restart the migrator failed with "database already exists": SQL Server answered before it had recovered the database, so the migrations did not see it | The first stack start after the restart | The migrator now waits until an existing database is ONLINE; checked by taking the database offline and starting the migrator |
+| A new day-boundary test was flaky: a shift of exactly 60 minutes sometimes recorded 59.99 on the ticking test clock | Running the test eight times in a row instead of trusting one green run | The test shift is 60.5 minutes; the exact checks (the days add up to the shift) were never affected |
 
 ## What was cut or left unverified
 

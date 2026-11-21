@@ -34,11 +34,6 @@ public class ShiftsController : ControllerBase
 	{
 		RecordingResult result = await r_Recording.ClockInAsync(User.GetCurrentUser(), parseKey(i_IdempotencyKey), i_CancellationToken);
 
-		if (!result.IsReplay)
-		{
-			Response.Headers.Location = $"/api/v1/shifts/{result.ShiftId}";
-		}
-
 		return recorded(result);
 	}
 
@@ -81,12 +76,6 @@ public class ShiftsController : ControllerBase
 	public async Task<IActionResult> GetActivity([FromQuery(Name = "limit")] int? i_Limit, CancellationToken i_CancellationToken)
 	{
 		return Ok(await r_Reads.GetActivityAsync(User.GetCurrentUser().Id, i_Limit ?? k_DefaultActivityLimit, i_CancellationToken));
-	}
-
-	[HttpGet("{shiftId:long}")]
-	public async Task<IActionResult> GetById([FromRoute(Name = "shiftId")] long i_ShiftId, CancellationToken i_CancellationToken)
-	{
-		return Ok(await r_Reads.GetByIdAsync(User.GetCurrentUser().Id, i_ShiftId, i_CancellationToken));
 	}
 
 	/// <summary>HTTP QUERY (RFC 10008): a safe, idempotent read whose filter travels in the body.</summary>

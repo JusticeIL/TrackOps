@@ -8,7 +8,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, ApiError } from '../../shared/api/client'
 import type { Shift } from '../../shared/api/types'
 
-export const CURRENT_SHIFT_KEY = ['shift', 'current'] as const
+const CURRENT_SHIFT_KEY = ['shift', 'current'] as const
 
 export type ShiftAction = 'clockIn' | 'clockOut' | 'breakStart' | 'breakEnd'
 
@@ -34,13 +34,13 @@ export function useCurrentShift() {
   })
 }
 
-function optimisticShift(previous: Shift | null | undefined, request: ActionRequest): Shift | null {
-  const nowIso = new Date(request.displayNowMs ?? 0).toISOString()
+function optimisticShift(previous: Shift | null | undefined, action: ShiftAction, displayNowMs: number): Shift | null {
+  const nowIso = new Date(displayNowMs).toISOString()
   const base: Shift = previous ?? {
     id: -1, userId: -1, username: '', displayName: '', clockInUtc: nowIso, clockOutUtc: null, status: 'Open',
     isCorrected: false, rowVersion: '', shiftMinutes: null, breakMinutes: null, workedMinutes: null, breaks: [],
   }
-  switch (request.action) {
+  switch (action) {
     case 'clockIn':
       return base
     case 'clockOut':
@@ -63,7 +63,10 @@ export function useShiftAction() {
     onMutate: async (request) => {
       await queryClient.cancelQueries({ queryKey: CURRENT_SHIFT_KEY })
       const previous = queryClient.getQueryData<Shift | null>(CURRENT_SHIFT_KEY)
-      queryClient.setQueryData(CURRENT_SHIFT_KEY, optimisticShift(previous, request))
+      // Before the display clock has synced there is no time to draw, so the screen waits for the real answer.
+      if (request.displayNowMs !== null) {
+        queryClient.setQueryData(CURRENT_SHIFT_KEY, optimisticShift(previous, request.action, request.displayNowMs))
+      }
       return { previous }
     },
     onError: (_error, _request, context) => {

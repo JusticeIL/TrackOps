@@ -1,7 +1,7 @@
 // Formatting and date arithmetic for Europe/Zurich. The browser's own time zone is never used:
 // every formatter names the zone explicitly, and every instant comes from the server.
 
-export const ZONE = 'Europe/Zurich'
+const ZONE = 'Europe/Zurich'
 const LOCALE = 'he-IL'
 
 const timeFormat = new Intl.DateTimeFormat(LOCALE, { timeZone: ZONE, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
@@ -28,12 +28,6 @@ function zurichParts(instant: Instant): Record<string, string> {
     parts[part.type] = part.value
   }
   return parts
-}
-
-/** Zurich calendar date of an instant, as yyyy-MM-dd. */
-export function zurichDate(instant: Instant): string {
-  const parts = zurichParts(instant)
-  return `${parts.year}-${parts.month}-${parts.day}`
 }
 
 /** Zurich wall time of an instant in the format of a datetime-local input: yyyy-MM-ddTHH:mm. */
@@ -77,9 +71,6 @@ export function formatHoursText(minutes: number): string {
   }
   return rest === 0 ? `${hours} שעות` : `${hours} שעות ו-${rest} דקות`
 }
-
-export const minutesBetween = (fromUtc: Instant, toUtc: Instant): number =>
-  Math.max(0, Math.floor((toDate(toUtc).getTime() - toDate(fromUtc).getTime()) / 60000))
 
 /** Adds whole months to a yyyy-MM string. */
 export function addMonths(month: string, delta: number): string {

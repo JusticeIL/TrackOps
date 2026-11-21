@@ -44,8 +44,12 @@ tests/.venv/Scripts/python -m pytest tests/test_static_clock.py   # needs no sta
 # Demo history for the employee "demo" (developer tool; never run automatically)
 python tools/seed_demo_data.py
 
+# Create .env with random secrets (never overwrites; Docker variant in the README)
+python tools/make_env.py
+
 # Backend
 dotnet build backend/TrackOps.sln            # needs the .NET 11 SDK; must stay at 0 warnings
+                                             # IDE: Visual Studio 2026 18.7+ (VS 2022 cannot load .NET 11)
 docker compose up -d --build backend-1 backend-2
 
 # Frontend
@@ -137,5 +141,12 @@ In Frontend:
   the request history (`features/requests`) and events (`features/calendar`). Never put sample
   rows in the database or the API. Everything else on those screens is real: hours come from the
   calendar API, and a filed request is stored through `POST /requests`.
+- Day minutes are split from a shift's cumulative minutes (`WorkCalculator`), so the days of a shift
+  add up to its own minutes. Keep it that way; `tests/test_day_boundaries.py` checks midnight,
+  month ends and when "today" turns.
+- Correction times must be UTC (`Z`); `EmployeeService` rejects anything else, because a time
+  without a zone would be read in the server's own zone.
+- Every endpoint must have a caller in the frontend. Remove an endpoint from all three API copies
+  (rule 7) when its last caller goes.
 - The API must stay stateless (rule 3). Anything shared between requests goes to Redis or SQL
   Server, never to a static field or an in-memory cache; that is what lets replicas be added.

@@ -18,7 +18,6 @@ def test_clock_in_and_out_record_the_external_time(user, stub):
 	closed = user.clock_out()
 
 	assert opened.status_code == 201
-	assert opened.headers["Location"].endswith(f"/shifts/{opened.json()['id']}")
 	assert opened.json()["clockInUtc"].startswith("2026-11-17T07:00:0")
 	assert opened.json()["status"] == "Open"
 	assert closed.status_code == 200
@@ -142,15 +141,6 @@ def test_a_time_reading_that_goes_backwards_is_treated_as_a_fault(user, stub):
 	assert response.status_code == 503
 	assert response.json()["code"] == "time_source_unavailable"
 	assert user.get("/shifts/current").json()["status"] == "Open"
-
-
-def test_another_users_shift_is_not_found(user, stub):
-	from conftest import Client
-	shift = work_shift(user, stub, "2026-11-17T07:00:00Z", "2026-11-17T15:00:00Z")
-	stranger = Client()
-
-	assert user.get(f"/shifts/{shift['id']}").status_code == 200
-	assert stranger.get(f"/shifts/{shift['id']}").status_code == 404
 
 
 def test_recent_activity_lists_events_newest_first(user, stub):

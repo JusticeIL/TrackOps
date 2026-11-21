@@ -103,10 +103,10 @@ public static class ShiftMapper
 /// </summary>
 public static class ShiftSearch
 {
-	public const int k_DefaultPageSize = 20;
-	public const int k_MaxPageSize = 100;
 	public const int k_MaxSearchLength = 100;
-	private const string k_LikeEscape = "\\";
+	public const string k_LikeEscape = "\\";
+	private const int k_DefaultPageSize = 20;
+	private const int k_MaxPageSize = 100;
 
 	public static async Task<PagedResult<ShiftDto>> RunAsync(
 		IQueryable<Shift> i_Source,

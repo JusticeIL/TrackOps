@@ -1,6 +1,6 @@
 // Shapes of the REST API (docs/api/API.md). All instants are UTC ISO-8601 strings.
 
-export type Role = 'Employee' | 'Manager'
+type Role = 'Employee' | 'Manager'
 export type ShiftStatus = 'Open' | 'Closed' | 'AutoClosed'
 export type ActivityType = 'ClockIn' | 'ClockOut' | 'BreakStart' | 'BreakEnd'
 
@@ -11,7 +11,7 @@ export interface User {
   role: Role
 }
 
-export interface Break {
+interface Break {
   id: number
   startUtc: string
   endUtc: string | null
@@ -45,14 +45,12 @@ export interface Paged<T> {
 export interface ActivityItem {
   type: ActivityType
   atUtc: string
-  shiftId: number
 }
 
 export interface ServerTime {
   utc: string
   zone: string
   offsetSeconds: number
-  source: string
 }
 
 export interface DaySummary {
@@ -70,8 +68,6 @@ export interface CalendarMonth {
   totals: {
     workedMinutes: number
     overtimeMinutes: number
-    daysWorked: number
-    averageDailyOvertimeMinutes: number
   }
 }
 

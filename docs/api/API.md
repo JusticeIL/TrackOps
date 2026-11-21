@@ -60,7 +60,7 @@ Every error is `application/problem+json` (RFC 9457):
 | 400 | `validation_failed`, `idempotency_key_required` |
 | 401 | `unauthenticated` |
 | 403 | `forbidden`, `csrf_invalid` |
-| 404 | `not_found` (also returned for another user's shift) |
+| 404 | `not_found` (also for a shift id that is not the given employee's) |
 | 409 | `shift_already_open`, `no_open_shift`, `break_already_open`, `no_open_break`, `stale_version`, `shift_overlap`, `idempotency_key_reused` |
 | 429 | `rate_limited` (with `Retry-After`) |
 | 500 | `internal_error` (no details are returned) |
@@ -147,17 +147,16 @@ No password is stored or compared.
 
 | Method | Path | Role | Success | Notes |
 |---|---|---|---|---|
-| GET | `/time` | Employee | 200 `{ utc, zone, offsetSeconds, source }` | For seeding the display clock only: the latest external reading plus monotonic elapsed time. 503 only when no reading has ever been obtained. |
+| GET | `/time` | Employee | 200 `{ utc, zone, offsetSeconds }` | For seeding the display clock only: the latest external reading plus monotonic elapsed time. 503 only when no reading has ever been obtained. |
 
 ### Shifts
 
 | Method | Path | Role | Success | Notes |
 |---|---|---|---|---|
-| POST | `/shifts` ★ | Employee | 201 Shift, `Location` | Clock in. 409 `shift_already_open`. 503. |
+| POST | `/shifts` ★ | Employee | 201 Shift | Clock in. 409 `shift_already_open`. 503. |
 | POST | `/shifts/current/clock-out` ★ | Employee | 200 Shift | No body. Closes an open break at the same instant. 409 `no_open_shift`. 503. |
 | GET | `/shifts/current` | Employee | 200 Shift, or 204 | |
-| GET | `/shifts/{shiftId}` | Employee | 200 Shift | 404 for another user's shift. |
-| GET | `/shifts/activity?limit=10` | Employee | 200 `{ items: [{ type, atUtc, shiftId }] }` | `type`: `ClockIn`, `ClockOut`, `BreakStart`, `BreakEnd`. `limit` 1–50. |
+| GET | `/shifts/activity?limit=10` | Employee | 200 `{ items: [{ type, atUtc }] }` | `type`: `ClockIn`, `ClockOut`, `BreakStart`, `BreakEnd`. `limit` 1–50. |
 | QUERY | `/shifts` | Employee | 200 page of Shift | Body `{ from?, to?, status?: [..], page?, pageSize? }`. `from`/`to` are local dates of clock-in, inclusive. |
 
 ### Breaks
@@ -174,7 +173,7 @@ the time of each is the external reading taken when the request arrives.
 
 | Method | Path | Role | Success |
 |---|---|---|---|
-| GET | `/calendar/months/{yyyy-MM}` | Employee | 200 `{ month, dailyTargetMinutes, days: [{ date, workedMinutes, breakMinutes, overtimeMinutes, shiftCount }], totals: { workedMinutes, overtimeMinutes, daysWorked, averageDailyOvertimeMinutes } }` |
+| GET | `/calendar/months/{yyyy-MM}` | Employee | 200 `{ month, dailyTargetMinutes, days: [{ date, workedMinutes, breakMinutes, overtimeMinutes, shiftCount }], totals: { workedMinutes, overtimeMinutes } }` |
 | GET | `/calendar/days/{yyyy-MM-dd}` | Employee | 200 `{ date, dailyTargetMinutes, workedMinutes, breakMinutes, overtimeMinutes, shifts: [Shift] }`. `today` is accepted as the date. |
 
 Worked time for a local day is the part of each shift between that day's two local midnights,
@@ -198,7 +197,7 @@ A request stays `InProgress`: there is no approval flow yet. Request numbers (`i
 |---|---|---|---|
 | QUERY | `/employees` | 200 `{ items: [User] }` | Body `{ search, limit? }`; `limit` 1–20. Prefix match on username and display name. |
 | QUERY | `/employees/shifts` | 200 page of Shift | Body `{ userId?, from?, to?, status?, search?, page?, pageSize? }`. `search` matches username or display name. |
-| PATCH | `/employees/{userId}/shifts/{shiftId}` | 200 Shift | Body `{ clockInUtc?, clockOutUtc?, reason, rowVersion }`. `reason` 3–300 characters. 409 `stale_version` or `shift_overlap`. Writes an audit row. |
+| PATCH | `/employees/{userId}/shifts/{shiftId}` | 200 Shift | Body `{ clockInUtc?, clockOutUtc?, reason, rowVersion }`. Times are UTC instants ending in `Z`; a time without a zone or with an offset is a 400. `reason` 3–300 characters. 409 `stale_version` or `shift_overlap`. Writes an audit row. |
 | GET | `/employees/{userId}/shifts/{shiftId}/audit` | 200 `{ items: [{ id, kind, changedBy: User, changedAtUtc, reason, oldClockInUtc, oldClockOutUtc, newClockInUtc, newClockOutUtc }] }` | `kind`: `ManagerCorrection`, `AutoClose`. |
 
 Everyone else gets 403 on these routes. With no manager configured, which is the default, that

@@ -52,7 +52,7 @@ def test_all_four_recorded_instants_are_the_external_readings(user, stub):
 	ended = user.break_end().json()
 	stub.set("2031-05-05T13:00:00Z")
 	closed = user.clock_out().json()
-	stored = user.get(f"/shifts/{closed['id']}").json()
+	stored = user.query("/shifts").json()["items"][0]
 
 	assert opened["clockInUtc"].startswith("2031-05-05T05:00:0")
 	assert started["breaks"][0]["startUtc"].startswith("2031-05-05T09:00:0")
@@ -168,4 +168,4 @@ def test_a_correction_is_refused_when_the_time_source_is_down(manager, stub):
 	stub.mode("ok", "ok")
 	time.sleep(1.2)
 	assert manager.get(path + "/audit").json()["items"] == []
-	assert employee.get(f"/shifts/{shift['id']}").json()["clockOutUtc"] == shift["clockOutUtc"]
+	assert employee.query("/shifts").json()["items"][0]["clockOutUtc"] == shift["clockOutUtc"]

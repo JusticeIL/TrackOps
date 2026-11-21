@@ -42,7 +42,7 @@ export default function FormsDataPage() {
         <h1>טפסים ונתונים</h1>
       </div>
       {failure ? (
-        <Notice kind="error">{describeError(failure)}</Notice>
+        <Notice>{describeError(failure)}</Notice>
       ) : !summary ? (
         <SkeletonRows rows={6} />
       ) : (
