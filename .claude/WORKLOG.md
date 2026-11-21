@@ -1,8 +1,13 @@
 # Working with Claude Code — log
 
 A short, honest record of how this project was built with Claude Code: what the tool did well,
-where it had to be corrected, and where it corrected me. The plan that was approved before any
-code is in `plans/01-api-contract-and-execution-plan.md`.
+where it had to be corrected, and where it corrected me. The approved plans are in `plans/`:
+`01-api-contract-and-execution-plan.md` (approved before any code existed),
+`02-pre-submission-review.md` and `03-requests-hardening-and-passwords.md`.
+
+`CLAUDE.md` is the standing brief for every session: the rules, the conventions, and the gotchas
+met along the way, written so the next session does not repeat a mistake. This log is the record
+of what happened.
 
 ## How the work was organised
 
@@ -31,6 +36,32 @@ code is in `plans/01-api-contract-and-execution-plan.md`.
 - **The diagram** is generated from one endpoint table, so the diagram and the contract change
   together.
 - **Tests** that control time through a stub: DST days, a slow or dead time source, recovery.
+
+Later rounds (review before submission, hardening):
+
+- **Diagnosing Visual Studio.** The solution would not open in Visual Studio 2022 (MSB4236). It
+  found the cause in the SDK itself: .NET 11 declares a minimum MSBuild of 18.7, which only
+  Visual Studio 2026 has. It installed VS 2026 after I approved, and built every project with
+  that MSBuild to prove it.
+- **Audits I asked for, done line by line.** Dead code and unused packages; every use of a clock
+  in the backend and the frontend (the static test now checks each file against its own list);
+  day boundaries at 23:59 → 00:00, month ends and DST nights.
+- **A real off-by-one at midnight.** The audit found that a shift crossing midnight lost a minute,
+  because each day's minutes were rounded down separately. Now the shift's total is rounded once
+  and split between the days, and `test_day_boundaries.py` pins it.
+- **Reproduce first, then fix.** When a time service answered with an empty time, the API returned
+  500. It added an "empty" mode to the stub, reproduced the 500 in a test, and only then made it
+  fall through to the next provider and a 503 with a Hebrew message.
+- **Input I would not have thought of.** Request text is normalised (NFC, line breaks) and refuses
+  bidi overrides and zero-width characters, which can make Hebrew and English display in a
+  misleading order; unknown JSON fields and enum numbers are refused too.
+- **Passwords done properly with the framework only.** PBKDF2 from .NET, salted, fixed-time
+  comparison, and the race between two first sign-ins of one username decided by the database
+  (unique index, conditional update), tested with ten simultaneous sign-ins.
+- **Checks I could not run myself.** It built all four project images for `linux/arm64` (Apple
+  Silicon) under emulation and started the API from them; it cloned the repository fresh and ran
+  it following only the README; it stopped the time service on a running stack to show what the
+  user sees during an outage.
 
 ## Where I corrected Claude Code
 

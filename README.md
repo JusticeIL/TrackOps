@@ -16,30 +16,20 @@ API cannot be reached, nothing is recorded and the request fails with `503`.
 | Gateway | nginx in front of two backend replicas |
 | Tests | pytest, black-box against the running stack |
 
-The backend runs on .NET 11.
+## How to run
 
-**Searches use the HTTP `QUERY` method** (RFC 10008, published June 2026). This was a deliberate
-choice. A search is a read, so it should be safe and repeatable like `GET`; but its filter
-(employee names, dates) should not sit in the URL, where it ends up in browser
-history, proxy logs and server access logs. `QUERY` gives both: the filter travels in the request
-body, and the method is defined as safe and idempotent, which `POST` is not.
-
-.NET 11 is the first version whose HTTP layer knows the method (`HttpMethods.Query`,
-`HttpMethods.IsQuery`). The API's `[HttpQuery]` attribute, its CORS policy and its CSRF check
-are built on those. Older versions can route `QUERY` too, as an arbitrary verb string; .NET 11
-was chosen so the method is a named part of the framework rather than a string literal. The
-price is that .NET 11 is a standard-term support release, not LTS. Both trade-offs, and the
-missing fallback, are in [DECISIONS.md](DECISIONS.md#5-api).
-
-Why things are built the way they are: [DECISIONS.md](DECISIONS.md).
-Security work, found / fixed / tested: [docs/SECURITY-REPORT.md](docs/SECURITY-REPORT.md).
-API contract: [docs/api/API.md](docs/api/API.md).
-
-![REST API map](docs/api/rest-api.png)
-
-![Clock-in flow](docs/api/rest-api-clock-in-flow.png)
-
-## Run it locally
+> **Quick start** — Windows with Docker Desktop running and internet access. In PowerShell, in
+> the repository folder:
+>
+> ```powershell
+> docker run --rm -v "${PWD}:/app" -w /app python:3.13-alpine python tools/make_env.py
+> docker compose up -d --build
+> ```
+>
+> Then open **<http://localhost:8080>** and sign in with a new username and any password of 8 or
+> more characters. The first build takes 5 to 10 minutes. Nothing else needs installing: no .NET
+> SDK, Node or Python. The steps below explain each command, the other shells, macOS, and what to
+> do if something fails.
 
 ### What you need
 
@@ -57,7 +47,7 @@ a company proxy, set the proxy in Docker Desktop (Settings → Resources → Pro
 services cannot be reached and clocking in returns an error (see "If something goes wrong").
 
 On Windows the commands below work in PowerShell or Git Bash; where they differ, both are shown.
-On a Mac, read "Windows, macOS and Linux" below first.
+On a Mac, first read "Windows, macOS and Linux" under "More about running it".
 
 ### 1. Create `.env`
 
@@ -157,6 +147,31 @@ docker compose down -v     # stops everything and deletes the database
 | Sign-in says "נחסמה זמנית" (429 `sign_in_locked`) | 5 wrong passwords for that username within 15 minutes | Wait the minutes the message names; the right password works again then |
 | Sign-in says "שם המשתמש או הסיסמה שגויים" | That username already signed in once, with another password | Use the password from its first sign-in, or another username; `docker compose down -v` starts over with no users |
 | Scripts on Windows are slow against `localhost` | Windows tries IPv6 first and waits two seconds | Use `127.0.0.1` instead of `localhost` in scripts |
+
+## How it works
+
+**Searches use the HTTP `QUERY` method** (RFC 10008, published June 2026). This was a deliberate
+choice. A search is a read, so it should be safe and repeatable like `GET`; but its filter
+(employee names, dates) should not sit in the URL, where it ends up in browser
+history, proxy logs and server access logs. `QUERY` gives both: the filter travels in the request
+body, and the method is defined as safe and idempotent, which `POST` is not.
+
+.NET 11 is the first version whose HTTP layer knows the method (`HttpMethods.Query`,
+`HttpMethods.IsQuery`). The API's `[HttpQuery]` attribute, its CORS policy and its CSRF check
+are built on those. Older versions can route `QUERY` too, as an arbitrary verb string; .NET 11
+was chosen so the method is a named part of the framework rather than a string literal. The
+price is that .NET 11 is a standard-term support release, not LTS. Both trade-offs, and the
+missing fallback, are in [DECISIONS.md](DECISIONS.md#5-api).
+
+Why things are built the way they are: [DECISIONS.md](DECISIONS.md).
+Security work, found / fixed / tested: [docs/SECURITY-REPORT.md](docs/SECURITY-REPORT.md).
+API contract: [docs/api/API.md](docs/api/API.md).
+
+![REST API map](docs/api/rest-api.png)
+
+![Clock-in flow](docs/api/rest-api-clock-in-flow.png)
+
+## More about running it
 
 ### Manager access (off by default)
 
@@ -289,9 +304,11 @@ explains what makes that work.
 
 ### HTTPS
 
-The local stack runs over plain HTTP. HTTPS is not enabled locally because the certificate would
-be self-signed, and browsers do not accept self-signed certificates without warnings. In real
-production the site is served over HTTPS with a professionally issued certificate.
+The local stack runs over plain HTTP. HTTPS would be my preference, but a certificate browsers
+trust needs a real domain and hosting, which this project does not have, and a self-signed
+certificate is not enough for modern browsers: they show a warning page for it. In real
+production the site is served over HTTPS with a professionally issued certificate. This is listed
+under the known limits in [DECISIONS.md](DECISIONS.md#10-not-done-and-known-limits).
 
 The code is ready for that: the cookie `Secure` flag and the HSTS header are on by default and
 are switched off only by `REQUIRE_HTTPS=false` in the local `.env`. A test verifies both in the
@@ -421,8 +438,13 @@ draw.io -x -f png -s 2 -b 24 -o docs/db/schema.png docs/db/schema.drawio
 ## How this was built with Claude Code
 
 The whole project was built with Claude Code, in plan mode with approval gates before any code.
-- [`CLAUDE.md`](CLAUDE.md): the rules and conventions Claude Code works by in this repository.
-- [`.claude/plans/`](.claude/plans/): the approved plans, the first one written before any code
-  existed.
-- [`.claude/WORKLOG.md`](.claude/WORKLOG.md): where it helped, where I corrected it, where it
-  corrected me, and what it got wrong and fixed.
+
+| What | Where |
+|---|---|
+| The rules and conventions it works by, and the gotchas met along the way | [`CLAUDE.md`](CLAUDE.md) |
+| The `.claude` folder | [`.claude/`](.claude/): the plans and the work log |
+| The work plans, each approved before the work started | [`.claude/plans/`](.claude/plans/): the API contract and execution plan (before any code), the pre-submission review, the request hardening and passwords |
+| Where it helped | [`.claude/WORKLOG.md` → Where Claude Code helped](.claude/WORKLOG.md#where-claude-code-helped) |
+| Where I had to correct it | [Where I corrected Claude Code](.claude/WORKLOG.md#where-i-corrected-claude-code) and [Where Claude Code got something wrong and fixed it](.claude/WORKLOG.md#where-claude-code-got-something-wrong-and-fixed-it) |
+| Where it corrected me | [Where Claude Code corrected me](.claude/WORKLOG.md#where-claude-code-corrected-me) |
+| What was cut or left unverified | [What was cut or left unverified](.claude/WORKLOG.md#what-was-cut-or-left-unverified) |

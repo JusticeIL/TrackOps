@@ -365,6 +365,12 @@ None of them has a sidebar entry, so there are no dead links.
   API; the shift is flagged `AutoClosed` and audited so it is never mistaken for a recording.
 - Failed recordings are not stored for idempotent replay; a retry after a 409 or 503 is evaluated
   again, which gives the same answer unless the situation changed.
+- No HTTPS locally. I would prefer HTTPS everywhere, but a certificate that browsers trust needs a
+  real domain and hosting, which this project does not have; a self-signed certificate is not
+  enough for modern browsers, which show a full-page warning for it and ignore an HSTS header sent
+  over it. So the local stack is plain HTTP with `REQUIRE_HTTPS=false` in `.env`, and the
+  code keeps `Secure` cookies and HSTS on by default for a deployment behind a real certificate
+  (section 8).
 - The gateway trusts the single proxy hop in front of the API. That is safe only because the API
   is not published outside the Docker network.
 - Rate limiting uses fixed one-minute windows, so a burst across a window boundary can reach
