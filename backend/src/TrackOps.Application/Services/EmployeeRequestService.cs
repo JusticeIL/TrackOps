@@ -55,8 +55,9 @@ public class EmployeeRequestService
 
 	public async Task<EmployeeRequestDto> CreateAsync(int i_UserId, NewEmployeeRequest i_Request, CancellationToken i_CancellationToken)
 	{
-		string title = (i_Request.Title ?? string.Empty).Trim();
-		string content = (i_Request.Content ?? string.Empty).Trim();
+		const bool v_AllowLineBreaks = true;
+		string? title = UserText.NormalizeLine(i_Request.Title);
+		string? content = UserText.NormalizeLines(i_Request.Content);
 		bool isKnownType = i_Request.Type.HasValue && Enum.IsDefined(i_Request.Type.Value);
 		bool isSickness = i_Request.Type == eRequestType.Sickness;
 		ValidationErrors errors = new ValidationErrors();
@@ -66,13 +67,22 @@ public class EmployeeRequestService
 			errors.Add("type", "type must be one of the request types");
 		}
 
-		if (title.Length < k_MinTextLength || title.Length > k_MaxTitleLength)
+		// Lengths are checked on the normalised text, which is exactly what is stored.
+		if (title == null || UserText.HasForbiddenCharacters(title, !v_AllowLineBreaks))
+		{
+			errors.Add("title", "title must be one line without control characters or invisible formatting characters");
+		}
+		else if (title.Length < k_MinTextLength || title.Length > k_MaxTitleLength)
 		{
 			errors.Add("title", $"title must be between {k_MinTextLength} and {k_MaxTitleLength} characters");
 		}
 
 		// An ordinary request must say what is asked. A sickness report may be sent without an explanation.
-		if (content.Length > k_MaxContentLength || (!isSickness && content.Length < k_MinTextLength))
+		if (content == null || UserText.HasForbiddenCharacters(content, v_AllowLineBreaks))
+		{
+			errors.Add("content", "content must not contain control characters (other than line breaks and tabs) or invisible formatting characters");
+		}
+		else if (content.Length > k_MaxContentLength || (!isSickness && content.Length < k_MinTextLength))
 		{
 			errors.Add("content", $"content must be between {k_MinTextLength} and {k_MaxContentLength} characters");
 		}
@@ -96,8 +106,8 @@ public class EmployeeRequestService
 			UserId = i_UserId,
 			Type = i_Request.Type!.Value,
 			Status = eRequestStatus.InProgress,
-			Title = title,
-			Content = content,
+			Title = title!,
+			Content = content!,
 			SickDays = i_Request.SickDays,
 			CreatedAtUtc = reading.Utc,
 		};

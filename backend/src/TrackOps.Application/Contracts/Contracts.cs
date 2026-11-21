@@ -11,8 +11,11 @@ public static class JsonDefaults
 
 	public static void Apply(JsonSerializerOptions i_Options)
 	{
+		// Enum values are read by name only ("Vacation"); a number such as 3 is refused.
+		const bool v_AllowIntegerValues = true;
+
 		i_Options.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
-		i_Options.Converters.Add(new JsonStringEnumConverter());
+		i_Options.Converters.Add(new JsonStringEnumConverter(null, !v_AllowIntegerValues));
 	}
 
 	private static JsonSerializerOptions createOptions()
@@ -109,7 +112,11 @@ public class EmployeeRequestDto
 	public DateTime CreatedAtUtc { get; set; }
 }
 
-/// <summary>Body of POST /requests. The server sets the status and the filing time.</summary>
+/// <summary>
+/// Body of POST /requests. The server sets the status and the filing time, so a body that sends
+/// them, or any other field not listed here, is refused instead of silently trimmed.
+/// </summary>
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public class NewEmployeeRequest
 {
 	public eRequestType? Type { get; set; }
