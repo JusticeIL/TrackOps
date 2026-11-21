@@ -78,7 +78,7 @@ def test_concurrent_break_starts_open_exactly_one_break(user, stub):
 	responses = fire(clients, lambda client: client.break_start())
 
 	assert sorted(response.status_code for response in responses) == [201] + [409] * 9
-	assert len(user.get("/shifts/current").json()["breaks"]) == 1
+	assert user.get("/shifts/current").json()["break"]["endUtc"] is None
 
 
 def test_concurrent_clock_outs_close_the_shift_once(user, stub):

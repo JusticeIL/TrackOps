@@ -9,7 +9,7 @@ namespace TrackOps.Application.Services;
 
 public static class ShiftMapper
 {
-	/// <summary>Selects only the columns the API returns, with breaks, in one SQL query (no N+1).</summary>
+	/// <summary>Selects only the columns the API returns, with the break, in one SQL query (no N+1).</summary>
 	public static readonly Expression<Func<Shift, ShiftDto>> sr_Projection = shift => new ShiftDto
 	{
 		Id = shift.Id,
@@ -21,10 +21,9 @@ public static class ShiftMapper
 		Status = shift.Status,
 		IsCorrected = shift.IsCorrected,
 		RowVersionBytes = shift.RowVersion,
-		Breaks = shift.Breaks
-			.OrderBy(pause => pause.StartUtc)
-			.Select(pause => new BreakDto { Id = pause.Id, StartUtc = pause.StartUtc, EndUtc = pause.EndUtc })
-			.ToList(),
+		Break = shift.Break == null
+			? null
+			: new BreakDto { Id = shift.Break.Id, StartUtc = shift.Break.StartUtc, EndUtc = shift.Break.EndUtc },
 	};
 
 	public static ShiftDto FromEntity(Shift i_Shift, string i_Username, string i_DisplayName)
@@ -40,10 +39,9 @@ public static class ShiftMapper
 			Status = i_Shift.Status,
 			IsCorrected = i_Shift.IsCorrected,
 			RowVersionBytes = i_Shift.RowVersion,
-			Breaks = i_Shift.Breaks
-				.OrderBy(pause => pause.StartUtc)
-				.Select(pause => new BreakDto { Id = pause.Id, StartUtc = pause.StartUtc, EndUtc = pause.EndUtc })
-				.ToList(),
+			Break = i_Shift.Break == null
+				? null
+				: new BreakDto { Id = i_Shift.Break.Id, StartUtc = i_Shift.Break.StartUtc, EndUtc = i_Shift.Break.EndUtc },
 		};
 
 		return Complete(dto);
@@ -53,15 +51,13 @@ public static class ShiftMapper
 	public static ShiftDto Complete(ShiftDto i_Dto)
 	{
 		double breakSeconds = 0;
+		BreakDto? pause = i_Dto.Break;
 
 		i_Dto.RowVersion = Convert.ToBase64String(i_Dto.RowVersionBytes);
-		foreach (BreakDto pause in i_Dto.Breaks)
+		if (pause != null && pause.EndUtc.HasValue)
 		{
-			if (pause.EndUtc.HasValue)
-			{
-				pause.Minutes = WorkCalculator.MinutesBetween(pause.StartUtc, pause.EndUtc.Value);
-				breakSeconds += (pause.EndUtc.Value - pause.StartUtc).TotalSeconds;
-			}
+			pause.Minutes = WorkCalculator.MinutesBetween(pause.StartUtc, pause.EndUtc.Value);
+			breakSeconds = (pause.EndUtc.Value - pause.StartUtc).TotalSeconds;
 		}
 
 		if (i_Dto.ClockOutUtc.HasValue)
@@ -78,12 +74,14 @@ public static class ShiftMapper
 
 	public static WorkSpan ToWorkSpan(ShiftDto i_Dto)
 	{
-		return new WorkSpan
+		WorkSpan span = new WorkSpan { StartUtc = i_Dto.ClockInUtc, EndUtc = i_Dto.ClockOutUtc };
+
+		if (i_Dto.Break != null)
 		{
-			StartUtc = i_Dto.ClockInUtc,
-			EndUtc = i_Dto.ClockOutUtc,
-			Breaks = i_Dto.Breaks.Select(pause => new WorkSpan { StartUtc = pause.StartUtc, EndUtc = pause.EndUtc }).ToList(),
-		};
+			span.Breaks.Add(new WorkSpan { StartUtc = i_Dto.Break.StartUtc, EndUtc = i_Dto.Break.EndUtc });
+		}
+
+		return span;
 	}
 
 	public static UserDto ToDto(User i_User)

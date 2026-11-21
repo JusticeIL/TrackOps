@@ -62,12 +62,12 @@ public class ShiftReadService
 				events.Add(new ActivityItemDto { Type = eActivityType.ClockOut, AtUtc = shift.ClockOutUtc.Value });
 			}
 
-			foreach (BreakDto pause in shift.Breaks)
+			if (shift.Break != null)
 			{
-				events.Add(new ActivityItemDto { Type = eActivityType.BreakStart, AtUtc = pause.StartUtc });
-				if (pause.EndUtc.HasValue)
+				events.Add(new ActivityItemDto { Type = eActivityType.BreakStart, AtUtc = shift.Break.StartUtc });
+				if (shift.Break.EndUtc.HasValue)
 				{
-					events.Add(new ActivityItemDto { Type = eActivityType.BreakEnd, AtUtc = pause.EndUtc.Value });
+					events.Add(new ActivityItemDto { Type = eActivityType.BreakEnd, AtUtc = shift.Break.EndUtc.Value });
 				}
 			}
 		}

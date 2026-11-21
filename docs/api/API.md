@@ -61,7 +61,7 @@ Every error is `application/problem+json` (RFC 9457):
 | 401 | `unauthenticated`, `invalid_credentials` (sign-in: wrong password for an existing username) |
 | 403 | `forbidden`, `csrf_invalid` |
 | 404 | `not_found` (also for a shift id that is not the given employee's) |
-| 409 | `shift_already_open`, `no_open_shift`, `break_already_open`, `no_open_break`, `stale_version`, `shift_overlap`, `idempotency_key_reused` |
+| 409 | `shift_already_open`, `no_open_shift`, `break_already_open`, `break_already_taken`, `no_open_break`, `stale_version`, `shift_overlap`, `idempotency_key_reused` |
 | 429 | `rate_limited`, `sign_in_locked` (both with `Retry-After`) |
 | 500 | `internal_error` (no details are returned) |
 | 503 | `time_source_unavailable` (with `Retry-After`), `dependency_unavailable` |
@@ -110,7 +110,7 @@ Counted in Redis, so both replicas share them. Limits are per minute and configu
   "status": "Open",            // Open | Closed | AutoClosed
   "isCorrected": false, "rowVersion": "AAAAAAAAB9E=",
   "shiftMinutes": null, "breakMinutes": null, "workedMinutes": null,   // null while open
-  "breaks": [ { "id": 5, "startUtc": "2026-11-17T10:00:03Z", "endUtc": null, "minutes": null } ]
+  "break": { "id": 5, "startUtc": "2026-11-17T10:00:03Z", "endUtc": null, "minutes": null }   // null until the break is taken
 }
 ```
 
@@ -165,9 +165,14 @@ stored only as a salted PBKDF2-SHA256 hash and never returned.
 Both actions read as a pair: `…/breaks/current/start` and `…/breaks/current/end`. Neither takes a body;
 the time of each is the external reading taken when the request arrives.
 
+**A shift has one break at most.** Once it has started, another start is refused: with
+`break_already_open` while it runs, with `break_already_taken` after it has ended. This is checked
+before the time service is asked, and the database enforces it with a unique index on
+`Breaks(ShiftId)`. The next shift gets its own break.
+
 | Method | Path | Role | Success | Notes |
 |---|---|---|---|---|
-| POST | `/shifts/current/breaks/current/start` ★ | Employee | 201 Shift | 409 `no_open_shift` or `break_already_open`. 503. |
+| POST | `/shifts/current/breaks/current/start` ★ | Employee | 201 Shift | 409 `no_open_shift`, `break_already_open` or `break_already_taken`. 503. |
 | POST | `/shifts/current/breaks/current/end` ★ | Employee | 200 Shift | 409 `no_open_shift` or `no_open_break`. 503. |
 
 ### Calendar

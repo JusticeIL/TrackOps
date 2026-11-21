@@ -79,7 +79,8 @@ public class ShiftDto
 
 	public int? WorkedMinutes { get; set; }
 
-	public List<BreakDto> Breaks { get; set; } = new List<BreakDto>();
+	/// <summary>The shift's one break, or null if none was taken.</summary>
+	public BreakDto? Break { get; set; }
 }
 
 public class PagedResult<T>

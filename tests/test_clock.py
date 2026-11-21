@@ -76,8 +76,7 @@ def test_breaks_are_recorded_and_subtracted(user, stub):
 
 	assert started.status_code == 201
 	assert ended.status_code == 200
-	assert len(closed["breaks"]) == 1
-	assert closed["breaks"][0]["minutes"] == approx(45)
+	assert closed["break"]["minutes"] == approx(45)
 	assert closed["shiftMinutes"] == approx(540)
 	assert closed["workedMinutes"] == approx(495)
 
@@ -92,6 +91,57 @@ def test_only_one_break_can_be_open(user, stub):
 
 	assert second.status_code == 409
 	assert second.json()["code"] == "break_already_open"
+
+
+def test_a_shift_has_one_break_at_most(user, stub):
+	stub.set("2026-11-17T07:00:00Z")
+	user.clock_in()
+	stub.set("2026-11-17T10:00:00Z")
+	user.break_start()
+	stub.set("2026-11-17T10:30:00Z")
+	user.break_end()
+	stub.set("2026-11-17T13:00:00Z")
+
+	second = user.break_start()
+	current = user.get("/shifts/current").json()
+
+	assert second.status_code == 409
+	assert second.json()["code"] == "break_already_taken"
+	assert current["break"]["startUtc"].startswith("2026-11-17T10:00:0")
+	assert current["break"]["endUtc"].startswith("2026-11-17T10:30:0")
+
+
+def test_a_second_break_is_refused_before_the_time_service_is_asked(user, stub):
+	stub.set("2026-11-17T07:00:00Z")
+	user.clock_in()
+	stub.set("2026-11-17T10:00:00Z")
+	user.break_start()
+	stub.set("2026-11-17T10:30:00Z")
+	user.break_end()
+	stub.mode("down", "down")
+
+	second = user.break_start()
+
+	stub.mode("ok", "ok")
+	assert second.status_code == 409, "the rule is checked first, so an outage does not hide it"
+	assert second.json()["code"] == "break_already_taken"
+
+
+def test_the_next_shift_gets_its_own_break(user, stub):
+	stub.set("2026-11-17T07:00:00Z")
+	user.clock_in()
+	stub.set("2026-11-17T10:00:00Z")
+	user.break_start()
+	stub.set("2026-11-17T10:30:00Z")
+	user.break_end()
+	stub.set("2026-11-17T16:00:00Z")
+	user.clock_out()
+
+	stub.set("2026-11-18T07:00:00Z")
+	user.clock_in()
+	stub.set("2026-11-18T10:00:00Z")
+
+	assert user.break_start().status_code == 201
 
 
 def test_break_actions_need_an_open_shift_and_an_open_break(user, stub):
@@ -114,7 +164,7 @@ def test_clock_out_closes_an_open_break_at_the_same_instant(user, stub):
 
 	closed = user.clock_out().json()
 
-	assert closed["breaks"][0]["endUtc"] == closed["clockOutUtc"]
+	assert closed["break"]["endUtc"] == closed["clockOutUtc"]
 
 
 def test_shift_crossing_midnight_is_one_shift_split_over_two_days(user, stub):

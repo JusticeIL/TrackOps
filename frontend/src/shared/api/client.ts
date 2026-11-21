@@ -99,6 +99,7 @@ export function describeError(error: unknown): string {
     shift_already_open: 'כבר קיימת משמרת פתוחה.',
     no_open_shift: 'אין משמרת פתוחה.',
     break_already_open: 'כבר קיימת הפסקה פתוחה.',
+    break_already_taken: 'כבר יצאת להפסקה במשמרת הזו. אפשר לצאת להפסקה אחת בלבד בכל משמרת.',
     no_open_break: 'אין הפסקה פתוחה.',
     rate_limited: 'בוצעו יותר מדי בקשות. המתינו דקה ונסו שוב.',
     stale_version: 'המשמרת השתנתה מאז שנטענה. רעננו ונסו שוב.',

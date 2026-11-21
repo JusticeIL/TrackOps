@@ -38,7 +38,7 @@ function optimisticShift(previous: Shift | null | undefined, action: ShiftAction
   const nowIso = new Date(displayNowMs).toISOString()
   const base: Shift = previous ?? {
     id: -1, userId: -1, username: '', displayName: '', clockInUtc: nowIso, clockOutUtc: null, status: 'Open',
-    isCorrected: false, rowVersion: '', shiftMinutes: null, breakMinutes: null, workedMinutes: null, breaks: [],
+    isCorrected: false, rowVersion: '', shiftMinutes: null, breakMinutes: null, workedMinutes: null, break: null,
   }
   switch (action) {
     case 'clockIn':
@@ -46,9 +46,9 @@ function optimisticShift(previous: Shift | null | undefined, action: ShiftAction
     case 'clockOut':
       return null
     case 'breakStart':
-      return { ...base, breaks: [...base.breaks, { id: -1, startUtc: nowIso, endUtc: null, minutes: null }] }
+      return { ...base, break: { id: -1, startUtc: nowIso, endUtc: null, minutes: null } }
     case 'breakEnd':
-      return { ...base, breaks: base.breaks.map((pause) => (pause.endUtc === null ? { ...pause, endUtc: nowIso } : pause)) }
+      return { ...base, break: base.break === null ? null : { ...base.break, endUtc: nowIso } }
   }
 }
 

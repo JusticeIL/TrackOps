@@ -211,14 +211,14 @@ public class EmployeeService
 			errors.Add("clockOutUtc", "clockOutUtc must be after clockInUtc");
 		}
 
-		foreach (Break pause in i_Shift.Breaks)
+		if (i_Shift.Break != null)
 		{
 			// An open break is closed at the new clock-out, so only its start has to fit.
-			DateTime pauseEnd = pause.EndUtc ?? pause.StartUtc;
+			DateTime pauseEnd = i_Shift.Break.EndUtc ?? i_Shift.Break.StartUtc;
 
-			if (pause.StartUtc < i_NewClockIn || pauseEnd > shiftEnd)
+			if (i_Shift.Break.StartUtc < i_NewClockIn || pauseEnd > shiftEnd)
 			{
-				errors.Add("breaks", "the new times must still contain every break of the shift");
+				errors.Add("break", "the new times must still contain the break of the shift");
 			}
 		}
 
@@ -251,9 +251,9 @@ public class EmployeeService
 		if (i_NewClockOut.HasValue)
 		{
 			i_Shift.Status = eShiftStatus.Closed;
-			foreach (Break pause in i_Shift.Breaks.Where(pause => pause.EndUtc == null))
+			if (i_Shift.Break != null && i_Shift.Break.EndUtc == null)
 			{
-				pause.EndUtc = i_NewClockOut;
+				i_Shift.Break.EndUtc = i_NewClockOut;
 			}
 		}
 	}

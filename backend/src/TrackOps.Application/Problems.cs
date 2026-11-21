@@ -80,6 +80,11 @@ public static class Problems
 		return new AppException(409, "break_already_open", "A break is already open");
 	}
 
+	public static AppException BreakAlreadyTaken()
+	{
+		return new AppException(409, "break_already_taken", "This shift already had its break");
+	}
+
 	public static AppException NoOpenBreak()
 	{
 		return new AppException(409, "no_open_break", "There is no open break");

@@ -31,7 +31,8 @@ export interface Shift {
   shiftMinutes: number | null
   breakMinutes: number | null
   workedMinutes: number | null
-  breaks: Break[]
+  /** A shift has one break at most; null until it is taken. */
+  break: Break | null
 }
 
 export interface Paged<T> {

@@ -102,10 +102,10 @@ public interface IAppDbContext
 
 	bool IsUniqueViolation(DbUpdateException i_Exception, string i_ConstraintName);
 
-	/// <summary>Loads the user's open shift with its breaks and holds an update lock on the row until the transaction ends.</summary>
+	/// <summary>Loads the user's open shift with its break and holds an update lock on the row until the transaction ends.</summary>
 	Task<Shift?> LockOpenShiftAsync(int i_UserId, CancellationToken i_CancellationToken);
 
-	/// <summary>Loads one shift of one user with its breaks and holds an update lock on the row until the transaction ends.</summary>
+	/// <summary>Loads one shift of one user with its break and holds an update lock on the row until the transaction ends.</summary>
 	Task<Shift?> LockShiftAsync(long i_ShiftId, int i_UserId, CancellationToken i_CancellationToken);
 }
 
@@ -113,7 +113,7 @@ public interface IAppDbContext
 public static class DbNames
 {
 	public const string k_OneOpenShiftIndex = "UX_Shifts_OneOpenPerUser";
-	public const string k_OneOpenBreakIndex = "UX_Breaks_OneOpenPerShift";
+	public const string k_OneBreakPerShiftIndex = "UX_Breaks_OnePerShift";
 	public const string k_IdempotencyKey = "PK_IdempotencyRecords";
 	public const string k_UsernameIndex = "UX_Users_Username";
 }

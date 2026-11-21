@@ -49,10 +49,10 @@ API_TREE = folder(
 		endpoint("GET", "/activity", "Recent in / out / break events", "Employee", "200"),
 		folder(
 			"/current", "the signed-in user's open shift",
-			endpoint("GET", "/", "Open shift with its breaks", "Employee", "200 · 204"),
+			endpoint("GET", "/", "Open shift with its break", "Employee", "200 · 204"),
 			endpoint("POST", "/clock-out", "Clock out · closes open break ★", "Employee", "200 · 409 · 503"),
 			folder(
-				"/breaks", "one open break at a time",
+				"/breaks", "one break per shift",
 				endpoint("POST", "/current/start", "Start break ★", "Employee", "201 · 409 · 503"),
 				endpoint("POST", "/current/end", "End break ★", "Employee", "200 · 409 · 503"),
 			),

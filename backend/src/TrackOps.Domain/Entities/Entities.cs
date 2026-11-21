@@ -78,7 +78,8 @@ public class Shift
 
 	public byte[] RowVersion { get; set; } = Array.Empty<byte>();
 
-	public List<Break> Breaks { get; set; } = new List<Break>();
+	/// <summary>The shift's break, if one was taken. A shift has at most one (unique index).</summary>
+	public Break? Break { get; set; }
 }
 
 public class Break

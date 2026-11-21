@@ -25,8 +25,8 @@ export default function DashboardPage() {
     queryKey: ['activity'],
     queryFn: () => api<{ items: ActivityItem[] }>('GET', '/shifts/activity?limit=10'),
   })
-  const openBreak = currentShift.data?.breaks.find((pause) => pause.endUtc === null)
-  const status = !currentShift.data ? 'מחוץ למשמרת' : openBreak ? 'בהפסקה' : 'במשמרת'
+  const isOnBreak = currentShift.data?.break != null && currentShift.data.break.endUtc === null
+  const status = !currentShift.data ? 'מחוץ למשמרת' : isOnBreak ? 'בהפסקה' : 'במשמרת'
 
   return (
     <>

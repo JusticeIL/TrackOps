@@ -68,7 +68,7 @@ TABLES = {
 		],
 	},
 	"Breaks": {
-		"note": "breaks inside a shift",
+		"note": "the one break of a shift",
 		"columns": [
 			column("Id", "bigint identity", "PK"),
 			column("ShiftId", "bigint", "FK"),
@@ -76,8 +76,7 @@ TABLES = {
 			column("EndUtc", INSTANT, nullable=True),
 		],
 		"rules": [
-			rule("UNIQUE", "(ShiftId) WHERE EndUtc IS NULL", "one open break per shift"),
-			rule("INDEX", "(ShiftId)"),
+			rule("UNIQUE", "(ShiftId)", "one break per shift"),
 			rule("CHECK", "EndUtc IS NULL OR EndUtc > StartUtc"),
 		],
 	},
@@ -200,10 +199,12 @@ def draw_table(page, name, x, y):
 	return card
 
 
-def relation(page, parent, child, label, exit_point, entry_point, optional=False):
-	"""A foreign key: the single bar is the referenced row, the crow's foot the rows that reference it."""
+def relation(page, parent, child, label, exit_point, entry_point, optional=False, at_most_one=False):
+	"""A foreign key: the single bar is the referenced row, the crow's foot the rows that reference it
+	(a circle and bar when at most one row may reference it)."""
 	style = (f"edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor={INK};strokeWidth=1.5;"
-			 f"startArrow={'ERzeroToOne' if optional else 'ERmandOne'};startFill=0;startSize=10;endArrow=ERzeroToMany;endFill=0;endSize=10;"
+			 f"startArrow={'ERzeroToOne' if optional else 'ERmandOne'};startFill=0;startSize=10;"
+			 f"endArrow={'ERzeroToOne' if at_most_one else 'ERzeroToMany'};endFill=0;endSize=10;"
 			 f"exitX={exit_point[0]};exitY={exit_point[1]};entryX={entry_point[0]};entryY={entry_point[1]};"
 			 f"fontSize=11;fontColor={INK};labelBackgroundColor={PAPER};" + ("dashed=1;" if optional else ""))
 	page.edge(parent, child, style, label)
@@ -229,7 +230,7 @@ def build():
 	requests = draw_table(page, "EmployeeRequests", column_x[0], lower_top)
 
 	relation(page, users, shifts, "ON DELETE RESTRICT", (1, column_anchor(TABLES["Users"], "Id")), (0, column_anchor(TABLES["Shifts"], "UserId")))
-	relation(page, shifts, breaks, "ON DELETE CASCADE", (1, column_anchor(TABLES["Shifts"], "Id")), (0, column_anchor(TABLES["Breaks"], "ShiftId")))
+	relation(page, shifts, breaks, "0..1 · ON DELETE CASCADE", (1, column_anchor(TABLES["Shifts"], "Id")), (0, column_anchor(TABLES["Breaks"], "ShiftId")), at_most_one=True)
 	relation(page, shifts, audits, "ShiftId · ON DELETE CASCADE", (0.5, 1), (0.5, 0))
 	v_Optional = True
 	# Leaves Users on its right side, so the line runs between the columns and not through EmployeeRequests below.
