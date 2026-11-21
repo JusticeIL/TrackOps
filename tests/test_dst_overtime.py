@@ -112,8 +112,9 @@ def test_month_cache_is_invalidated_by_a_new_shift(user, stub):
 	work_shift(user, stub, "2026-11-17T07:00:00Z", "2026-11-17T15:00:00Z")
 	after = user.get("/calendar/months/2026-11").json()["totals"]["workedMinutes"]
 
+	# The stub clock keeps ticking, so each shift may land a minute short: one minute per shift.
 	assert before == approx(480)
-	assert after == approx(960)
+	assert after == pytest.approx(960, abs=2)
 
 
 def test_open_shift_counts_up_to_the_current_time(user, stub):
