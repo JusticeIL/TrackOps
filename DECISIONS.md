@@ -133,7 +133,8 @@ limits, and time-of-day premiums.
 | DST transitions | Covered above; tested for both 2027 transitions |
 | Manager edits a shift someone else just changed | The row version in the request is compared under lock: `409 stale_version` |
 | Correction that would cut off a break, overlap another shift, or lie in the future | `400` / `409 shift_overlap` |
-| Two first sign-ins of one username at once | Unique index on the username; the loser re-reads the row |
+| Two first sign-ins of one username at once | Unique index on the username; the loser re-reads the row and must match the winner's password |
+| A request's text holds control, bidi-override or zero-width characters | Refused (400): they can make stored text display as something else. Text is normalised to Unicode NFC and one kind of line break; fields the server owns, and enum numbers, are refused |
 | Session ended (signed out elsewhere, expired) | Next request returns 401 and the app returns to sign-in |
 | Time API returns nonsense (bad JSON, wrong zone, absurd year) | Treated as a failure of that provider |
 
@@ -171,17 +172,35 @@ limits, and time-of-day premiums.
 - Every endpoint has a caller in the app. A `GET /shifts/{id}` existed and was removed: the app never
   asked for one shift on its own, and the history search already returns full shifts.
 
-## 6. Authentication (mock, on purpose)
+## 6. Authentication (simple on purpose)
 
-Any valid-looking credentials sign in, as an employee. **No password is stored or compared, so
-there is nothing to hash.** Everything around it is real:
+**Sign-in and sign-up are one step ("trust on first use").** The first sign-in with a username
+creates that user and stores a hash of the password given then. Every later sign-in must give the
+same password, or it gets `401 invalid_credentials`; the user's shifts and requests stay with the
+username. Usernames ignore case. There is no separate registration, password change or reset: the
+task is a shift clock, and a real product would use the company's identity provider instead.
+
+- An earlier version accepted any password every time, so anyone could enter as anyone. Storing
+  the first password was a later decision; users created before it get their password at their
+  next sign-in.
+- **Hash:** PBKDF2-HMAC-SHA256 from .NET itself (no extra package), a random 16-byte salt per
+  password, 600,000 iterations (OWASP's figure for this algorithm), stored as
+  `pbkdf2-sha256$iterations$salt$key` so the count can be raised later without locking anyone
+  out; keys compared in constant time. The test stack uses 1,000 iterations, because the suite
+  signs in a few hundred new users.
+- **Who was first is decided by the database:** the unique index on the username for a new user,
+  and a conditional `UPDATE ... WHERE PasswordHash IS NULL` for an older one. Of ten simultaneous
+  first sign-ins with ten passwords exactly one gets in (tested).
+
+Everything around it is real:
 
 - The JWT (24 h) and an opaque session id travel in `HttpOnly`, `SameSite=Strict` cookies.
 - A request is accepted only if the JWT is valid, its `sid` claim equals the session cookie, and
   the session exists in Redis. Sign-out deletes the session, which revokes the JWT at once on
   every replica. Signing in again rotates the session.
 - CSRF: an HMAC-signed double-submit token bound to the session id.
-- Input validation, rate limiting and role checks apply exactly as they would with real passwords.
+- Input validation, a sign-in rate limit (10 per minute per address), structured logging of
+  refused sign-ins, and role checks.
 
 Two roles only: Employee and Manager. Manager routes are locked at controller level.
 
@@ -245,7 +264,7 @@ does not, and never a sample that looks like the user's own data without being i
 |---|---|
 | Files and links on a request, the request guidelines pop-up | Uploads need their own limits and scanning; the guidelines are static text |
 | Support (three frames) | Static help content adds no engineering depth |
-| Profile | With mock sign-in there is nothing to edit; sign-out moved to the header menu |
+| Profile | Nothing to edit beyond the username; sign-out moved to the header menu |
 | Company-rules card | Static content |
 | Language switcher | Hebrew only (see above) |
 | Salary and payslip cards, form downloads | Payroll and exports are out of scope |
@@ -342,7 +361,9 @@ None of them has a sidebar entry, so there are no dead links.
   is not published outside the Docker network.
 - Rate limiting uses fixed one-minute windows, so a burst across a window boundary can reach
   twice the limit.
-- Mock sign-in: anyone can sign in as anyone. If a manager username is configured, that includes
-  the manager.
+- Anyone can claim a username nobody has used yet, including a configured manager username that
+  has never signed in. A forgotten password cannot be reset: use another username, or reset the
+  database (`docker compose down -v`).
+- Ten failed sign-ins a minute per address slow guessing down; there is no account lockout.
 - Keyboard operation was built in (native buttons, a native dialog, a combobox pattern, visible
   focus, a skip link) and spot-checked, not exhaustively tested with a screen reader.

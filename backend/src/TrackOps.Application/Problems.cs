@@ -36,6 +36,12 @@ public static class Problems
 		return new AppException(401, "unauthenticated", "Sign in to continue");
 	}
 
+	/// <summary>The same answer whatever was wrong, so it reveals nothing beyond "no".</summary>
+	public static AppException InvalidCredentials()
+	{
+		return new AppException(401, "invalid_credentials", "The username or password is incorrect");
+	}
+
 	public static AppException Forbidden()
 	{
 		return new AppException(403, "forbidden", "This action needs the manager role");

@@ -46,6 +46,8 @@ code is in `plans/01-api-contract-and-execution-plan.md`.
 | An overtime card on the home screen | Removed; overtime stays on the Calendar | The home screen is for clocking in and out |
 | A manager who signs in with the username `admin` | Off by default, behind one setting | The task is a clock for workers. It asked whether to delete the manager code or switch it off; I chose the switch, since the code is tested and is the only way to fix a shift the system closed by itself |
 | Remove the two health endpoints along with the other dead code (they have no caller) | Keep them | My call: they stay for a future container health check |
+| Any password accepted for any username, every time (my own brief had asked for a mock sign-in) | The first sign-in's password is stored, hashed, and required afterwards | Data belongs to a username; without this anyone could read or file requests as anyone. It kept the change small: no registration screen, PBKDF2 from .NET itself, and the database decides who was first |
+| Request text checked only for length | Strict parsing: unknown fields and enum numbers refused, text normalised, invisible formatting characters refused | I asked it not to trust anything the user sends |
 | Two screens left out of the build (forms and data, requests and reports) | First shown as pictures of the planned screens, then built for real: hours from my actual shifts, forms that file a stored request, sample data only where the system has none | I wanted the menu to show where the product is going without building features the task does not ask for |
 
 ## Where Claude Code corrected me

@@ -17,14 +17,16 @@ interface StatCardProps {
   changeLabel: string
   /** Said instead, when there is nothing to compare with. */
   emptyLabel: string
-  tone: 'accent' | 'dark'
 }
 
-export function StatCard({ id, title, minutes, change, changeLabel, emptyLabel, tone }: StatCardProps) {
+export function StatCard({ id, title, minutes, change, changeLabel, emptyLabel }: StatCardProps) {
   return (
-    <section className={`card stat-card stat-card-${tone}`} aria-labelledby={id}>
+    <section className="card stat-card" aria-labelledby={id}>
       <h2 id={id}>{title}</h2>
-      <p className="stat-value latin">{formatMinutes(minutes)}</p>
+      {/* The paragraph stays right-to-left, so the value sits on the right; only the number is left-to-right. */}
+      <p className="stat-value">
+        <span className="latin">{formatMinutes(minutes)}</span>
+      </p>
       <p className="stat-change">
         {change === null ? (
           emptyLabel

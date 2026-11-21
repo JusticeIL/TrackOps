@@ -136,6 +136,17 @@ public class CurrentUser
 public class AuthRules
 {
 	public string ManagerUsername { get; set; } = string.Empty;
+
+	/// <summary>PBKDF2 iterations for a new password hash. The test stack lowers it, because it signs in hundreds of new users.</summary>
+	public int PasswordIterations { get; set; } = 600_000;
+}
+
+/// <summary>Turns a password into a salted, deliberately slow hash, and checks a password against one.</summary>
+public interface IPasswordHasher
+{
+	string Hash(string i_Password);
+
+	bool Verify(string i_Password, string i_StoredHash);
 }
 
 /// <summary>Business rules that are configuration, not code.</summary>

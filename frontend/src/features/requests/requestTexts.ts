@@ -33,3 +33,17 @@ export const SAMPLE_REQUESTS: EmployeeRequest[] = [
   { id: 2, type: 'Sickness', status: 'Approved', title: 'היעדרות רפואית - יום אחד', content: '', sickDays: 1, createdAtUtc: '2024-01-05T08:00:00Z' },
   { id: 1, type: 'Equipment', status: 'InProgress', title: 'מחשב נייד חדש', content: '', sickDays: null, createdAtUtc: '2024-01-03T08:00:00Z' },
 ]
+
+const NUMBER_DIGITS = 4
+
+/** "#0005", "#1001": the number people see is the request's id. */
+export const formatRequestNumber = (id: number): string => `#${String(id).padStart(NUMBER_DIGITS, '0')}`
+
+/** The type in Hebrew; a sickness report also says how many days it covers. */
+export function describeType(request: EmployeeRequest): string {
+  if (request.type !== 'Sickness' || request.sickDays === null) {
+    return TYPE_LABELS[request.type]
+  }
+  const days = request.sickDays === 1 ? 'יום אחד' : `${request.sickDays} ימים`
+  return `${TYPE_LABELS.Sickness} · ${days}`
+}

@@ -58,7 +58,7 @@ Every error is `application/problem+json` (RFC 9457):
 | Status | Codes |
 |---|---|
 | 400 | `validation_failed`, `idempotency_key_required` |
-| 401 | `unauthenticated` |
+| 401 | `unauthenticated`, `invalid_credentials` (sign-in: wrong password for an existing username) |
 | 403 | `forbidden`, `csrf_invalid` |
 | 404 | `not_found` (also for a shift id that is not the given employee's) |
 | 409 | `shift_already_open`, `no_open_shift`, `break_already_open`, `no_open_break`, `stale_version`, `shift_overlap`, `idempotency_key_reused` |
@@ -136,12 +136,12 @@ Counted in Redis, so both replicas share them. Limits are per minute and configu
 | Method | Path | Role | Success | Notes |
 |---|---|---|---|---|
 | GET | `/auth/csrf` | Public | 200 `{ token }` | |
-| POST | `/auth/session` | Public | 200 User | Body `{ username, password }`. Mock sign-in: any valid-looking pair passes. The role is Employee, or Manager for the one username in the server's `MANAGER_USERNAME` setting (empty by default). 400 on invalid input. |
+| POST | `/auth/session` | Public | 200 User | Body `{ username, password }`. The first sign-in with a username creates the user and stores a hash of this password; later sign-ins must give the same password, else 401 `invalid_credentials`. The role is Employee, or Manager for the one username in the server's `MANAGER_USERNAME` setting (empty by default). 400 on invalid input. |
 | GET | `/auth/session` | Employee | 200 User | 401 when not signed in. |
 | DELETE | `/auth/session` | Employee | 204 | Revokes the session and clears the cookies. |
 
-Username: 3–32 characters from `a-z A-Z 0-9 . _ -`, stored lower-case. Password: 8–128 characters.
-No password is stored or compared.
+Username: 3–32 characters from `a-z A-Z 0-9 . _ -`, stored lower-case. Password: 8–128 characters,
+stored only as a salted PBKDF2-SHA256 hash and never returned.
 
 ### Time
 
@@ -190,6 +190,16 @@ A user's own requests and reports. Nobody sees another user's.
 | POST | `/requests` | Employee | 201 Request | Body `{ type, title, content?, sickDays? }`. `title` 3–100 characters. `content` 3–2000 characters; it may be empty for `Sickness`. `sickDays` 1–30, required for `Sickness` and not allowed otherwise. The server sets `status` to `InProgress` and takes `createdAtUtc` from the external time API: 503 `time_source_unavailable` if it cannot be read, and nothing is stored. Counts against the recording rate limit. No `Idempotency-Key`. |
 
 A request stays `InProgress`: there is no approval flow yet. Request numbers (`id`) start at 1001.
+
+How `POST /requests` reads its body, strictly:
+- Only the four fields above. Any other field (`status`, `createdAtUtc`, `id`, ...) is a 400, not
+  silently ignored. `type` is a name (`"Vacation"`); a number is a 400.
+- `title` and `content` are normalised to Unicode NFC, `content`'s line breaks to one kind, both
+  trimmed; lengths are checked after that. `title` is one line. Neither may contain control
+  characters (`content` may contain line breaks and tabs), bidi embeddings, overrides or isolates
+  (U+202A–U+202E, U+2066–U+2069) or zero-width characters (U+200B–U+200D, U+FEFF); the direction
+  marks U+200E and U+200F are fine. A 400 names the refused field in `errors`.
+- The text is stored and returned as given (after normalisation), as plain data.
 
 ### Employees (Manager only)
 

@@ -54,7 +54,6 @@ export default function FormsDataPage() {
             change={percentChange(summary.monthMinutes, summary.previousMonthSoFarMinutes)}
             changeLabel="לעומת אותם ימים בחודש הקודם"
             emptyLabel="אין נתונים מהחודש הקודם להשוואה"
-            tone="accent"
           />
           <StatCard
             id="average-title"
@@ -63,7 +62,6 @@ export default function FormsDataPage() {
             change={percentChange(summary.lastSevenDaysMinutes, summary.weeklyAverageMinutes)}
             changeLabel="ב-7 הימים האחרונים לעומת הממוצע"
             emptyLabel="לפי 4 השבועות האחרונים"
-            tone="dark"
           />
           <LeaveCard id="vacation-title" title="ימי חופשה" unit="ימי חופשה" {...SAMPLE_LEAVE.vacation} />
           <LeaveCard id="sickness-title" title="ימי מחלה" unit="ימי מחלה" {...SAMPLE_LEAVE.sickness} />

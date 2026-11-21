@@ -15,6 +15,8 @@ What was checked, what was found and fixed, and what proves it. "Test" names a p
 | Security headers | Done | `test_page_has_security_headers`, `test_api_has_security_headers_and_is_never_cached`, `test_https_mode_sets_secure_cookies_and_hsts` |
 | Rate limiting | Done | `test_recording_is_rate_limited_per_user`, `test_rate_limit_of_one_user_does_not_affect_another` |
 | Role-locked routes | Done | `test_manager_routes_reject_anonymous_callers`, `test_manager_routes_reject_employees` (4 routes each) |
+| Password storage | Done | `test_the_password_of_the_first_sign_in_is_required_afterwards`, `test_simultaneous_first_sign_ins_let_exactly_one_password_in`, `test_the_password_is_never_sent_back` |
+| Strict request input | Done | `test_fields_the_server_owns_are_refused_not_ignored`, `test_invalid_requests_are_rejected` (control, bidi and zero-width characters, enum numbers), `test_text_is_stored_in_composed_unicode_form` |
 | Session handling | Done | `test_sign_out_revokes_the_token_even_if_the_cookie_is_kept`, `test_signing_in_again_rotates_the_session`, `test_jwt_is_rejected_without_its_matching_session_cookie`, `test_tampered_jwt_is_rejected` |
 | Least-privilege database login | Done | Created by the migrator; see below |
 | Secrets only through the environment | Done | Audit table below; history check below |
@@ -51,6 +53,18 @@ Content-Security-Policy allows scripts and styles only from its own origin, with
 **CSRF.** Cookies are `SameSite=Strict`. On top of that, every `POST`, `PATCH` and `DELETE` must
 carry a token in the `X-CSRF-Token` header that matches the token cookie and whose HMAC signature
 verifies for the current session id. `GET` and `QUERY` change nothing and need no token.
+
+**Passwords.** The first sign-in with a username stores a hash of its password; later sign-ins
+must match it (`401 invalid_credentials` otherwise, the same answer whatever was wrong). The hash
+is PBKDF2-HMAC-SHA256 from .NET itself, 16-byte random salt, 600,000 iterations, compared in
+constant time; the password itself is never stored, logged or returned. Who signed in first is
+decided by the database (unique username index; a conditional update for users from before), so
+simultaneous first sign-ins cannot both win.
+
+**Request text.** Free text from users is normalised (NFC, line breaks) and refused when it holds
+control characters, bidi overrides or isolates, or zero-width characters, which can make stored
+text display as something it is not ("Trojan Source"-style spoofing). Request bodies may not
+carry fields the server owns, and enums are read by name only.
 
 **Sessions.** The JWT and the session id are `HttpOnly` cookies, so page scripts cannot read
 them. A valid JWT is not enough: its `sid` claim must equal the session cookie and the session
@@ -142,7 +156,8 @@ Passwords, tokens and cookies are never logged.
   certificate that is not verified; API to Redis is unencrypted). Acceptable on a private network
   on one host; not for a multi-host deployment.
 - No container image scanning, no web application firewall, no penetration test.
-- No account lockout or multi-factor authentication: sign-in is a mock by design.
+- No account lockout or multi-factor authentication, and no password change or reset; the sign-in
+  rate limit (10 per minute per address) is the guard against guessing.
 - Secrets are static values in `.env`; there is no secret manager and no rotation.
 - The nginx master process runs as root inside its container (workers do not); the API and the
   migrator run as a non-root user.

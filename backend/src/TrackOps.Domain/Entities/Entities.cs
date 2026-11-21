@@ -46,6 +46,12 @@ public class User
 	public string DisplayName { get; set; } = string.Empty;
 
 	public eUserRole Role { get; set; }
+
+	/// <summary>
+	/// Hash of the password given at this user's first sign-in; later sign-ins must match it.
+	/// Null only for a user created before passwords were stored, until their next sign-in.
+	/// </summary>
+	public string? PasswordHash { get; set; }
 }
 
 /// <summary>

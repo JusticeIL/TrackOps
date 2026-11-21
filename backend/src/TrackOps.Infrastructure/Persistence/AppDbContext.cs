@@ -73,6 +73,7 @@ public class AppDbContext : DbContext, IAppDbContext
 		{
 			user.Property(entity => entity.Username).HasMaxLength(32);
 			user.Property(entity => entity.DisplayName).HasMaxLength(32);
+			user.Property(entity => entity.PasswordHash).HasMaxLength(200);
 			user.HasIndex(entity => entity.Username).IsUnique().HasDatabaseName(DbNames.k_UsernameIndex);
 			user.ToTable(table => table.HasCheckConstraint("CK_Users_Role", "[Role] IN (0, 1)"));
 		});

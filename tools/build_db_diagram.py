@@ -37,11 +37,13 @@ TABLES = {
 			column("Username", "nvarchar(32)"),
 			column("DisplayName", "nvarchar(32)"),
 			column("Role", "int"),
+			column("PasswordHash", "nvarchar(200)", nullable=True),
 		],
 		"rules": [
-			rule("UNIQUE", "(Username)"),
+			rule("UNIQUE", "(Username)", "one user per name · first sign-in sets the password"),
 			rule("CHECK", "Role IN (0, 1)"),
 			rule("VALUES", "Role: 0 Employee · 1 Manager"),
+			rule("NOTE", "PasswordHash: pbkdf2-sha256$iterations$salt$key"),
 		],
 	},
 	"Shifts": {

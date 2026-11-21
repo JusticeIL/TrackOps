@@ -27,8 +27,9 @@ import urllib.request
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 MARK = "demo-seed"
 MANAGER = "admin"
-# Sign-in is a mock: any password of 8 or more characters is accepted, so this is not a secret.
-PASSWORD = "demo-password"
+# A username's first sign-in sets its password. On a new database this becomes the password of
+# "demo" and "admin"; it is a demo value, not a secret. Use --password if they already have another.
+DEFAULT_PASSWORD = "demo-password"
 # SQL Server's name for the time zone that Europe/Zurich belongs to.
 SQL_ZONE = "W. Europe Standard Time"
 DAYS_BACK = 42
@@ -42,7 +43,7 @@ SQLCMD = '/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P "$MSSQL_SA_PASS
 
 # ---------- the application: create the users and ask for today's date ----------
 
-def call(opener, method, url, body=None, csrf=None):
+def call(opener, method, url, body=None, csrf=None, unauthorized_message=None):
 	headers = {"Content-Type": "application/json"}
 	if csrf:
 		headers["X-CSRF-Token"] = csrf
@@ -52,17 +53,20 @@ def call(opener, method, url, body=None, csrf=None):
 		with opener.open(request, timeout=30) as response:
 			return json.loads(response.read())
 	except urllib.error.HTTPError as error:
+		if error.code == 401 and unauthorized_message:
+			sys.exit(unauthorized_message)
 		sys.exit(f"{method} {url} answered {error.code}: {error.read().decode(errors='replace')}")
 	except urllib.error.URLError as error:
 		sys.exit(f"Cannot reach {url} ({error.reason}). Is the stack running?")
 
 
-def sign_in(api, username):
+def sign_in(api, username, password):
 	"""Signs in through the real API, which creates the user on first sign-in. Returns the session."""
 	opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar()))
 	csrf = call(opener, "GET", f"{api}/auth/csrf")["token"]
+	refused = f"'{username}' already has a different password. Run again with --password and that password."
 
-	call(opener, "POST", f"{api}/auth/session", {"username": username, "password": PASSWORD}, csrf)
+	call(opener, "POST", f"{api}/auth/session", {"username": username, "password": password}, csrf, refused)
 	return opener
 
 
@@ -190,20 +194,21 @@ def main():
 	parser = argparse.ArgumentParser(description="Write demo shift history for one employee.")
 	parser.add_argument("--url", default="http://127.0.0.1:8080", help="where the stack is published")
 	parser.add_argument("--username", default="demo", help="the employee who gets the history")
+	parser.add_argument("--password", default=DEFAULT_PASSWORD, help="password for the demo user and admin (set on their first sign-in)")
 	arguments = parser.parse_args()
 	api = arguments.url.rstrip("/") + "/api/v1"
 
 	if not USERNAME_RULE.fullmatch(arguments.username):
 		sys.exit("The username must be 3-32 letters, digits, dots, hyphens or underscores.")
 
-	sign_in(api, MANAGER)
-	today = zurich_today(api, sign_in(api, arguments.username))
+	sign_in(api, MANAGER, arguments.password)
+	today = zurich_today(api, sign_in(api, arguments.username, arguments.password))
 	shifts = plan_shifts(today)
 
 	run_sql(build_sql(arguments.username, shifts))
 	print(f"Wrote {len(shifts)} demo shifts for '{arguments.username}', "
 		f"{today - datetime.timedelta(days=DAYS_BACK)} to {today - datetime.timedelta(days=1)} (Zurich dates).")
-	print(f"Sign in as '{arguments.username}' with any password of 8 or more characters.")
+	print(f"Sign in as '{arguments.username}' with the password '{arguments.password}'.")
 
 
 if __name__ == "__main__":

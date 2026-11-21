@@ -6,6 +6,7 @@ using Polly;
 using StackExchange.Redis;
 using TrackOps.Application.Abstractions;
 using TrackOps.Infrastructure.Jobs;
+using TrackOps.Infrastructure.Passwords;
 using TrackOps.Infrastructure.Persistence;
 using TrackOps.Infrastructure.Redis;
 using TrackOps.Infrastructure.Time;
@@ -34,6 +35,7 @@ public static class DependencyInjection
 		i_Services.AddSingleton<ISessionStore, RedisSessionStore>();
 		i_Services.AddSingleton<IRateLimiter, RedisRateLimiter>();
 		i_Services.AddSingleton<ICalendarCache, RedisCalendarCache>();
+		i_Services.AddSingleton<IPasswordHasher, Pbkdf2PasswordHasher>();
 
 		i_Services.AddSingleton(timeApiOptions);
 		i_Services.AddSingleton<ITimeProvider, ExternalTimeProvider>();

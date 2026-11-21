@@ -7,14 +7,20 @@ import type { EmployeeRequest } from '../../shared/api/types'
 import { formatDate } from '../../shared/time/zurich'
 import { Notice, Pagination, SkeletonRows } from '../../shared/ui/components'
 import { PlusIcon, SickIcon } from '../../shared/ui/icons'
+import { RequestDetailsDialog } from './RequestDetailsDialog'
 import { RequestDialog, REQUESTS_KEY } from './RequestDialog'
 import type { RequestFormKind } from './RequestDialog'
-import { SAMPLE_REQUESTS, STATUS_CLASSES, STATUS_LABELS, TYPE_LABELS } from './requestTexts'
+import { describeType, formatRequestNumber, SAMPLE_REQUESTS, STATUS_CLASSES, STATUS_LABELS } from './requestTexts'
+import './requests.css'
 
 const PAGE_SIZE = 5
-const NUMBER_DIGITS = 4
 
-function RequestsTable({ requests }: { requests: EmployeeRequest[] }) {
+interface RequestsTableProps {
+  requests: EmployeeRequest[]
+  onOpen: (request: EmployeeRequest) => void
+}
+
+function RequestsTable({ requests, onOpen }: RequestsTableProps) {
   return (
     <div className="table-wrap">
       <table className="table">
@@ -31,14 +37,19 @@ function RequestsTable({ requests }: { requests: EmployeeRequest[] }) {
         <tbody>
           {requests.map((request) => (
             <tr key={request.id}>
-              {/* React escapes text, so a title is always shown as plain text, never as HTML. */}
-              <td className="request-title">{request.title}</td>
+              {/* React escapes text, so a title is always shown as plain text, never as HTML.
+                  dir="auto" lets a title that starts with English or a number read in its own direction. */}
+              <td className="request-title">
+                <button type="button" className="link-button" dir="auto" onClick={() => onOpen(request)}>
+                  {request.title}
+                </button>
+              </td>
               <td>
                 <span className={`badge ${STATUS_CLASSES[request.status]}`}>{STATUS_LABELS[request.status]}</span>
               </td>
               <td className="latin">{formatDate(request.createdAtUtc)}</td>
-              <td>{TYPE_LABELS[request.type]}</td>
-              <td className="latin">#{String(request.id).padStart(NUMBER_DIGITS, '0')}</td>
+              <td>{describeType(request)}</td>
+              <td className="latin">{formatRequestNumber(request.id)}</td>
             </tr>
           ))}
         </tbody>
@@ -54,6 +65,7 @@ export default function RequestsPage() {
   })
   const [page, setPage] = useState(1)
   const [openForm, setOpenForm] = useState<RequestFormKind | null>(null)
+  const [shownRequest, setShownRequest] = useState<EmployeeRequest | null>(null)
   const requests = [...(own.data?.items ?? []), ...SAMPLE_REQUESTS]
   const totalPages = Math.ceil(requests.length / PAGE_SIZE)
   const shownPage = Math.min(page, totalPages)
@@ -86,12 +98,13 @@ export default function RequestsPage() {
           <SkeletonRows rows={PAGE_SIZE} />
         ) : (
           <>
-            <RequestsTable requests={requests.slice((shownPage - 1) * PAGE_SIZE, shownPage * PAGE_SIZE)} />
+            <RequestsTable requests={requests.slice((shownPage - 1) * PAGE_SIZE, shownPage * PAGE_SIZE)} onOpen={setShownRequest} />
             <Pagination page={shownPage} totalPages={totalPages} totalItems={requests.length} onPageChange={setPage} />
           </>
         )}
       </section>
       {openForm && <RequestDialog key={openForm} kind={openForm} onClose={closeForm} />}
+      {shownRequest && <RequestDetailsDialog key={shownRequest.id} request={shownRequest} onClose={() => setShownRequest(null)} />}
     </>
   )
 }
