@@ -1,0 +1,52 @@
+/* The title in the table opens the request's details; it looks like a link, and is a button. */
+.link-button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent-ink);
+  font: inherit;
+  text-align: start;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+
+.link-button:hover {
+  color: var(--ink);
+}
+
+/* Label and value side by side; on a narrow screen the value wraps under its label. */
+.details-list {
+  margin: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.details-list > div {
+  display: grid;
+  grid-template-columns: 6rem minmax(0, 1fr);
+  gap: var(--space-3);
+  align-items: baseline;
+}
+
+.details-list dt {
+  color: var(--muted);
+}
+
+.details-list dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+/* The user's own line breaks are kept; very long words wrap instead of widening the dialog. */
+.request-content {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-block-size: 18rem;
+  overflow-y: auto;
+  padding: var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  background: var(--paper);
+}

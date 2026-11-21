@@ -1,10 +1,12 @@
 // The two forms of the Requests screen: a new request, and a sickness report. Both send
 // POST /requests; the server sets the status and takes the filing time from the external time API.
+// The server is the judge of what is valid: the checks here only spare a round trip, and when the
+// server refuses a field, its error is shown under that field.
 // The dialog is the native <dialog> element: it traps focus and closes on Escape by itself.
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
-import { api, describeError } from '../../shared/api/client'
+import { api, ApiError, describeError } from '../../shared/api/client'
 import type { EmployeeRequest, RequestType } from '../../shared/api/types'
 import { Notice } from '../../shared/ui/components'
 import { REQUEST_FORM_TYPES, TYPE_LABELS } from './requestTexts'
@@ -18,8 +20,40 @@ const MAX_SICK_DAYS = 30
 
 export type RequestFormKind = 'request' | 'sickness'
 
+type Field = 'title' | 'type' | 'content' | 'sickDays'
+
+/** What to tell the user when the server refuses a field. */
+const FIELD_MESSAGES: Record<Field, string> = {
+  title: `הכותרת צריכה להיות שורה אחת של ${MIN_TEXT_LENGTH}–${MAX_TITLE_LENGTH} תווים, בלי תווים נסתרים.`,
+  type: 'יש לבחור נושא מהרשימה.',
+  content: `הפירוט יכול להכיל עד ${MAX_CONTENT_LENGTH} תווים, בלי תווים נסתרים.`,
+  sickDays: `מספר ימי המחלה צריך להיות בין 1 ל-${MAX_SICK_DAYS}.`,
+}
+
+/** The fields the server named, read from keys such as "title" or "$.title". */
+function refusedFields(error: unknown): Set<Field> {
+  const fields = new Set<Field>()
+  if (error instanceof ApiError) {
+    for (const key of Object.keys(error.fieldErrors)) {
+      const name = key.replace(/^\$\.?/, '')
+      if (name in FIELD_MESSAGES) {
+        fields.add(name as Field)
+      }
+    }
+  }
+  return fields
+}
+
 /** The title a sickness report gets when the user leaves the title empty. */
 const defaultSicknessTitle = (days: number): string => (days === 1 ? 'דיווח מחלה - יום אחד' : `דיווח מחלה - ${days} ימים`)
+
+function FieldError({ field, refused }: { field: Field; refused: Set<Field> }) {
+  return refused.has(field) ? (
+    <span id={`request-${field}-error`} className="field-error">
+      {FIELD_MESSAGES[field]}
+    </span>
+  ) : null
+}
 
 export function RequestDialog({ kind, onClose }: { kind: RequestFormKind; onClose: () => void }) {
   const isSickness = kind === 'sickness'
@@ -48,10 +82,16 @@ export function RequestDialog({ kind, onClose }: { kind: RequestFormKind; onClos
     dialogRef.current?.showModal()
   }, [])
 
+  const refused = refusedFields(filing.error)
   const isTitleValid = isSickness ? title.trim().length === 0 || title.trim().length >= MIN_TEXT_LENGTH : title.trim().length >= MIN_TEXT_LENGTH
   const isValid = isSickness
     ? isTitleValid && Number.isInteger(days) && days >= 1 && days <= MAX_SICK_DAYS
     : isTitleValid && type !== '' && content.trim().length >= MIN_TEXT_LENGTH
+
+  // Accessibility attributes for a field the server refused.
+  function invalidProps(field: Field) {
+    return refused.has(field) ? { 'aria-invalid': true, 'aria-describedby': `request-${field}-error` } : {}
+  }
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault()
@@ -71,12 +111,15 @@ export function RequestDialog({ kind, onClose }: { kind: RequestFormKind; onClos
           <input
             id="request-title"
             className="input"
+            dir="auto"
             minLength={MIN_TEXT_LENGTH}
             maxLength={MAX_TITLE_LENGTH}
             value={title}
             onChange={(event) => setTitle(event.target.value)}
             required={!isSickness}
+            {...invalidProps('title')}
           />
+          <FieldError field="title" refused={refused} />
         </div>
 
         {isSickness ? (
@@ -92,12 +135,21 @@ export function RequestDialog({ kind, onClose }: { kind: RequestFormKind; onClos
               value={sickDays}
               onChange={(event) => setSickDays(event.target.value)}
               required
+              {...invalidProps('sickDays')}
             />
+            <FieldError field="sickDays" refused={refused} />
           </div>
         ) : (
           <div className="field">
             <label htmlFor="request-type">נושא הבקשה</label>
-            <select id="request-type" className="input" value={type} onChange={(event) => setType(event.target.value as RequestType | '')} required>
+            <select
+              id="request-type"
+              className="input"
+              value={type}
+              onChange={(event) => setType(event.target.value as RequestType | '')}
+              required
+              {...invalidProps('type')}
+            >
               <option value="">בחרו נושא</option>
               {REQUEST_FORM_TYPES.map((option) => (
                 <option key={option} value={option}>
@@ -105,6 +157,7 @@ export function RequestDialog({ kind, onClose }: { kind: RequestFormKind; onClos
                 </option>
               ))}
             </select>
+            <FieldError field="type" refused={refused} />
           </div>
         )}
 
@@ -113,16 +166,20 @@ export function RequestDialog({ kind, onClose }: { kind: RequestFormKind; onClos
           <textarea
             id="request-content"
             className="input"
+            dir="auto"
             rows={5}
             minLength={isSickness ? undefined : MIN_TEXT_LENGTH}
             maxLength={MAX_CONTENT_LENGTH}
             value={content}
             onChange={(event) => setContent(event.target.value)}
             required={!isSickness}
+            {...invalidProps('content')}
           />
+          <FieldError field="content" refused={refused} />
         </div>
 
-        {filing.isError && <Notice>{describeError(filing.error)}</Notice>}
+        {/* A general message only when the server's refusal is not about one of the fields above. */}
+        {filing.isError && refused.size === 0 && <Notice>{describeError(filing.error)}</Notice>}
 
         <div className="row">
           <button type="submit" className="button button-primary" disabled={filing.isPending || !isValid}>
