@@ -47,7 +47,6 @@ API_TREE = folder(
 		endpoint("POST", "/", "Clock in ★", "Employee", "201 · 409 · 503"),
 		endpoint("QUERY", "/", "History: filter · paginate", "Employee", "200 · 400"),
 		endpoint("GET", "/activity", "Recent in / out / break events", "Employee", "200"),
-		endpoint("GET", "/{shiftId}", "One own shift with breaks", "Employee", "200 · 404"),
 		folder(
 			"/current", "the signed-in user's open shift",
 			endpoint("GET", "/", "Open shift with its breaks", "Employee", "200 · 204"),
@@ -267,7 +266,7 @@ FLOW_STEPS = [
 	("6 · Idempotency-Key lookup", "has this user already sent this key?", "SQL Server", ("seen before", "Replay stored response", "same 201 · no second shift", False), "new key"),
 	("7 · Fetch Zurich time", "short timeout · one retry · second provider · circuit breaker", "External time API", ("down or slow", "503", "time_source_unavailable — FAIL CLOSED", True), "UTC instant"),
 	("8 · INSERT shift + idempotency record", "one transaction · unique index: one open shift per user", "SQL Server", ("index violated", "409", "shift_already_open", True), "committed"),
-	("9 · 201 Created", "shift JSON · Location: /shifts/{shiftId}", None, None, ""),
+	("9 · 201 Created", "the new shift as JSON", None, None, ""),
 ]
 
 
