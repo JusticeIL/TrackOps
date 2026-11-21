@@ -1,5 +1,6 @@
 """Sign-in, session cookies, rotation and revocation, and the password set at a username's first sign-in."""
 import os
+import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 
@@ -149,8 +150,9 @@ def test_simultaneous_first_sign_ins_let_exactly_one_password_in(stub):
 	with ThreadPoolExecutor(max_workers=len(passwords)) as pool:
 		codes = list(pool.map(lambda password: sign_in_as(username, password)[1].status_code, passwords))
 
+	# The others are refused: 401 for a wrong password, or 429 once five wrong ones locked the name.
 	assert codes.count(200) == 1, codes
-	assert codes.count(401) == len(passwords) - 1, codes
+	assert all(code in (401, 429) for code in codes if code != 200), codes
 
 
 def test_the_password_is_never_sent_back(stub):
@@ -162,4 +164,53 @@ def test_the_password_is_never_sent_back(stub):
 		assert "secret-password-123" not in body
 		assert "pbkdf2" not in body.lower()
 		assert "passwordhash" not in body.lower()
+
+
+# ---------- Too many wrong passwords lock the username for a while ----------
+# Production: 5 wrong passwords within 15 minutes. The test stack keeps the count of 5 and
+# shortens the window to 6 seconds.
+
+MAX_FAILED_SIGN_INS = 5
+TEST_WINDOW_SECONDS = 6
+
+
+def fail(username, times):
+	return [sign_in_as(username, f"wrong-password-{index}")[1].status_code for index in range(times)]
+
+
+def test_a_username_is_locked_after_too_many_wrong_passwords(stub):
+	username = new_username()
+	sign_in_as(username, "right-password")
+
+	refused = fail(username, MAX_FAILED_SIGN_INS)
+	_, locked = sign_in_as(username, "right-password")   # even the right password waits
+
+	assert refused == [401] * MAX_FAILED_SIGN_INS
+	assert locked.status_code == 429
+	assert locked.json()["code"] == "sign_in_locked"
+	assert 1 <= int(locked.headers["Retry-After"]) <= TEST_WINDOW_SECONDS
+
+
+def test_the_lock_affects_only_that_username_and_ends_by_itself(stub):
+	username, other = new_username(), new_username()
+	sign_in_as(username, "right-password")
+	sign_in_as(other, "other-password")
+	fail(username, MAX_FAILED_SIGN_INS)
+
+	assert sign_in_as(other, "other-password")[1].status_code == 200
+	assert sign_in_as(username, "right-password")[1].status_code == 429
+	time.sleep(TEST_WINDOW_SECONDS + 1)
+	assert sign_in_as(username, "right-password")[1].status_code == 200
+
+
+def test_a_correct_password_clears_earlier_mistakes(stub):
+	username = new_username()
+	sign_in_as(username, "right-password")
+
+	fail(username, MAX_FAILED_SIGN_INS - 1)
+	assert sign_in_as(username, "right-password")[1].status_code == 200
+	fail(username, MAX_FAILED_SIGN_INS - 1)
+
+	# Eight wrong passwords in all, but never five in a row, so the username is not locked.
+	assert sign_in_as(username, "right-password")[1].status_code == 200
 

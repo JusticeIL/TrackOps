@@ -18,6 +18,7 @@ public class SignInOutcome
 /// creates that user and stores a hash of the password given then; every later sign-in must give
 /// the same password. The user's shifts and requests stay with the username. Everyone is an
 /// employee, unless a manager username is configured (AuthRules); it is not by default.
+/// After too many wrong passwords a username is locked for a while (AuthRules), whatever is typed.
 /// Around it: input validation, a server-side session rotated on sign-in and revoked on sign-out.
 /// </summary>
 public class AuthService
@@ -29,13 +30,20 @@ public class AuthService
 	private readonly ISessionStore r_Sessions;
 	private readonly AuthRules r_AuthRules;
 	private readonly IPasswordHasher r_PasswordHasher;
+	private readonly ISignInAttempts r_SignInAttempts;
 
-	public AuthService(IAppDbContext i_Db, ISessionStore i_Sessions, AuthRules i_AuthRules, IPasswordHasher i_PasswordHasher)
+	public AuthService(
+		IAppDbContext i_Db,
+		ISessionStore i_Sessions,
+		AuthRules i_AuthRules,
+		IPasswordHasher i_PasswordHasher,
+		ISignInAttempts i_SignInAttempts)
 	{
 		r_Db = i_Db;
 		r_Sessions = i_Sessions;
 		r_AuthRules = i_AuthRules;
 		r_PasswordHasher = i_PasswordHasher;
+		r_SignInAttempts = i_SignInAttempts;
 	}
 
 	public async Task<SignInOutcome> SignInAsync(SignInRequest i_Request, string? i_PreviousSessionId, CancellationToken i_CancellationToken)
@@ -84,6 +92,17 @@ public class AuthService
 		string? newHash = null;
 		User? user = await r_Db.Users.FirstOrDefaultAsync(candidate => candidate.Username == username, i_CancellationToken);
 
+		if (user?.PasswordHash != null)
+		{
+			// Checked before the password, so a locked username learns nothing and costs no hashing.
+			int secondsLocked = await r_SignInAttempts.SecondsLockedAsync(username, r_AuthRules.MaxFailedSignIns);
+
+			if (secondsLocked > 0)
+			{
+				throw Problems.SignInLocked(secondsLocked);
+			}
+		}
+
 		if (user == null)
 		{
 			newHash = r_PasswordHasher.Hash(i_Password);
@@ -97,10 +116,18 @@ public class AuthService
 
 		// The hash this request stored needs no second check; anyone else's must match.
 		bool isOwnNewPassword = newHash != null && user.PasswordHash == newHash;
+		bool isCorrect = isOwnNewPassword || (user.PasswordHash != null && r_PasswordHasher.Verify(i_Password, user.PasswordHash));
 
-		if (!isOwnNewPassword && (user.PasswordHash == null || !r_PasswordHasher.Verify(i_Password, user.PasswordHash)))
+		if (!isCorrect)
 		{
+			await r_SignInAttempts.RecordFailureAsync(username, r_AuthRules.FailedSignInWindowSeconds);
 			throw Problems.InvalidCredentials();
+		}
+
+		if (!isOwnNewPassword)
+		{
+			// A correct password wipes earlier mistakes.
+			await r_SignInAttempts.ClearAsync(username);
 		}
 
 		if (user.Role != role)

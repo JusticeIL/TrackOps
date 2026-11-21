@@ -48,6 +48,60 @@ public class RedisSessionStore : ISessionStore
 }
 
 /// <summary>
+/// Wrong passwords per username. The first one starts a window; when the count reaches the limit
+/// inside it, the username stays locked until the window ends. INCR and EXPIRE run in one Lua
+/// script, so every replica sees the same count.
+/// </summary>
+public class RedisSignInAttempts : ISignInAttempts
+{
+	private const string k_RecordScript = @"
+local count = redis.call('INCR', KEYS[1])
+if count == 1 then redis.call('EXPIRE', KEYS[1], ARGV[1]) end
+return count";
+
+	private readonly IConnectionMultiplexer r_Redis;
+
+	public RedisSignInAttempts(IConnectionMultiplexer i_Redis)
+	{
+		r_Redis = i_Redis;
+	}
+
+	public async Task<int> SecondsLockedAsync(string i_Username, int i_MaxFailures)
+	{
+		IDatabase database = r_Redis.GetDatabase();
+		RedisValue failures = await database.StringGetAsync(key(i_Username));
+		int seconds = 0;
+
+		if (failures.HasValue && (long)failures >= i_MaxFailures)
+		{
+			TimeSpan? left = await database.KeyTimeToLiveAsync(key(i_Username));
+
+			seconds = (int)Math.Max(1, Math.Ceiling((left ?? TimeSpan.Zero).TotalSeconds));
+		}
+
+		return seconds;
+	}
+
+	public Task RecordFailureAsync(string i_Username, int i_WindowSeconds)
+	{
+		RedisKey[] keys = { key(i_Username) };
+		RedisValue[] arguments = { i_WindowSeconds };
+
+		return r_Redis.GetDatabase().ScriptEvaluateAsync(k_RecordScript, keys, arguments);
+	}
+
+	public Task ClearAsync(string i_Username)
+	{
+		return r_Redis.GetDatabase().KeyDeleteAsync(key(i_Username));
+	}
+
+	private static RedisKey key(string i_Username)
+	{
+		return $"sign-in-failures:{i_Username}";
+	}
+}
+
+/// <summary>
 /// Fixed one-minute window per bucket and subject. INCR and EXPIRE run in one Lua script, so the
 /// count is atomic and shared by every replica.
 /// </summary>

@@ -51,9 +51,9 @@ public class AuthController : ControllerBase
 		{
 			result = await r_AuthService.SignInAsync(i_Request, Request.Cookies[AuthCookies.k_SessionId], i_CancellationToken);
 		}
-		catch (AppException)
+		catch (AppException exception)
 		{
-			r_Logger.LogWarning("security_event=sign_in_rejected ip={Ip}", HttpContext.Connection.RemoteIpAddress);
+			r_Logger.LogWarning("security_event=sign_in_rejected code={Code} ip={Ip}", exception.Code, HttpContext.Connection.RemoteIpAddress);
 			throw;
 		}
 

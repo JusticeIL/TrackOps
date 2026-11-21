@@ -22,6 +22,8 @@ x-test-env: &test-env
   # The suite signs in a few hundred new users; at the production count (600,000 PBKDF2
   # iterations) that alone would add minutes. Checking a stored hash uses the count inside it.
   Auth__PasswordIterations: "1000"
+  # A locked username opens again after 6 s instead of 15 min, so a test can watch it happen.
+  Auth__FailedSignInWindowSeconds: "6"
   # Long enough for a 25 h DST-day shift; the auto-close test jumps 31 h.
   WorkRules__MaxShiftHours: "30"
 

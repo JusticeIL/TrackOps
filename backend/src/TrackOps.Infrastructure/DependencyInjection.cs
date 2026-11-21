@@ -36,6 +36,7 @@ public static class DependencyInjection
 		i_Services.AddSingleton<IRateLimiter, RedisRateLimiter>();
 		i_Services.AddSingleton<ICalendarCache, RedisCalendarCache>();
 		i_Services.AddSingleton<IPasswordHasher, Pbkdf2PasswordHasher>();
+		i_Services.AddSingleton<ISignInAttempts, RedisSignInAttempts>();
 
 		i_Services.AddSingleton(timeApiOptions);
 		i_Services.AddSingleton<ITimeProvider, ExternalTimeProvider>();

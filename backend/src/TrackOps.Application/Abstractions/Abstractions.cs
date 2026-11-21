@@ -139,6 +139,23 @@ public class AuthRules
 
 	/// <summary>PBKDF2 iterations for a new password hash. The test stack lowers it, because it signs in hundreds of new users.</summary>
 	public int PasswordIterations { get; set; } = 600_000;
+
+	/// <summary>Wrong passwords for one username, within the window, before that username is locked.</summary>
+	public int MaxFailedSignIns { get; set; } = 5;
+
+	/// <summary>The window starts at the first wrong password; a locked username opens again when it ends.</summary>
+	public int FailedSignInWindowSeconds { get; set; } = 900;
+}
+
+/// <summary>Wrong passwords per username, counted in a store shared by all replicas.</summary>
+public interface ISignInAttempts
+{
+	/// <summary>Seconds until the username may try again; 0 when it is not locked.</summary>
+	Task<int> SecondsLockedAsync(string i_Username, int i_MaxFailures);
+
+	Task RecordFailureAsync(string i_Username, int i_WindowSeconds);
+
+	Task ClearAsync(string i_Username);
 }
 
 /// <summary>Turns a password into a salted, deliberately slow hash, and checks a password against one.</summary>
